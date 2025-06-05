@@ -11,7 +11,7 @@
 @section('content')
 <div class="container px-5 ">
     <x-dashboard-header 
-        title="Edit : $article->title" 
+        title="Edit : {{$article->title}}" 
         description="Edit your article details below. Make sure to save your changes."
         :btn="$btn"
         class="mb-2 ">

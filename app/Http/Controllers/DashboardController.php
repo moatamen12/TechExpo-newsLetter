@@ -5,10 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\UserProfiles;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use App\Http\Controllers\ArticlesController;
 class DashboardController extends Controller
 {
     //get the current user profile id
@@ -21,21 +18,22 @@ class DashboardController extends Controller
 
     public function index()
     {
-        Gate::authorize('accessDashboard', Auth::user());
+        // Gate::authorize('accessDashboard');
+
         $profile_id = $this->getCorrentUser();
-
         $articles = $this->TopArticles(5, $profile_id);
-
         $user = $this->user();
+        
         return view('dashboard.home', [
             'user' => $user,
             'articles' => $articles,
-        ]); 
+        ]);     
     }
 
     public function articles(Request $request)
     {
-        Gate::authorize('accessDashboard', Auth::user());
+        // Gate::authorize('accessDashboard');
+
         $profile_id = $this->getCorrentUser();
 
         $published = $this->publishedArticles($profile_id);
@@ -52,6 +50,7 @@ class DashboardController extends Controller
     // get the user information 
     public function user()
     {
+        // Gate::authorize('accessDashboard');
         //get teh authirised user
         $user = Auth::id();  
         $profile_id = UserProfiles::where('user_id', $user)->first()->profile_id;
@@ -79,9 +78,10 @@ class DashboardController extends Controller
     //gitting the latest article by the user
     public function TopArticles($limit = 10, $user_id)
     {   
-        if (!Gate::allows('accessDashboard') || is_null($user_id)) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Gate::allows('accessDashboard') || is_null($user_id)) {
+        //     abort(403, 'Unauthorized action.');
+        // }
+        // Gate::authorize('accessDashboard');
 
         return Article::select('article_id','author_id', 'title', 'status','view_count' ,'created_at')
             ->with(['author.user', 'categorie'])
@@ -94,9 +94,10 @@ class DashboardController extends Controller
     //get the published articles
     public function publishedArticles($user_id,$limit = 10, Request $request = null)
     {   
-        if (!Gate::allows('accessDashboard') || is_null($user_id)) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Gate::allows('accessDashboard') || is_null($user_id)) {
+        //     abort(403, 'Unauthorized action.');
+        // }
+        // // Gate::authorize('accessDashboard');
 
         //get the articles by the user
         $articles = Article::with(['author.user', 'categorie'])
@@ -118,9 +119,10 @@ class DashboardController extends Controller
     //get the draft articles
     public function draftArticles($user_id,$limit = 10,Request $request = null)
     {   
-        if (!Gate::allows('accessDashboard') || is_null($user_id)) {
-            abort(403, 'Unauthorized action.');
-        }
+        // if (!Gate::allows('accessDashboard') || is_null($user_id)) {
+        //     abort(403, 'Unauthorized action.');
+        // }
+        // // Gate::authorize('accessDashboard');
 
         $articles = Article::select('article_id', 'title', 'status','view_count' ,'created_at')
             ->with(['author.user', 'categorie'])

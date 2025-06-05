@@ -12,7 +12,7 @@
     <tbody class="table-group-divider" id="{{ $tableID }}-content">
         @forelse ($vars as $var)
             <tr class="clickable-row" data-href="{{ route('articles.show', $var['article_id']) }}">
-                <td class="hover_title">{{$var['title']}}</td>
+                <td>{{$var['title']}}</td>
                 <td>
                     @if ($var['status'] == 'published')
                         <span class="badge published">Published</span>

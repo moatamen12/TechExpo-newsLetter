@@ -1,145 +1,255 @@
 @extends('layouts.app')
+
 @section('title', 'Profile')
-@php
-    $btn = [
-        'link' => route('home'),
-        'text' => 'Become a Writer
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" 
-                    width="20" height="20" class="me-2 align-text-bottom" 
-                    style="fill: currentColor;">
-                    <path d="M278.5 215.6L23 471c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l57-57 68 0c49.7 0 97.9-14.4 139-41c11.1-7.2 5.5-23-7.8-23c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l81-24.3c2.5-.8 4.8-2.1 6.7-4l22.4-22.4c10.1-10.1 2.9-27.3-11.3-27.3l-32.2 0c-5.1 0-9.2-4.1-9.2-9.2c0-4.1 2.7-7.6 6.5-8.8l112-33.6c4-1.2 7.4-3.9 9.3-7.7C506.4 207.6 512 184.1 512 160c0-41-16.3-80.3-45.3-109.3l-5.5-5.5C432.3 16.3 393 0 352 0s-80.3 16.3-109.3 45.3L139 149C91 197 64 262.1 64 330l0 55.3L253.6 195.8c6.2-6.2 16.4-6.2 22.6 0c5.4 5.4 6.1 13.6 2.2 19.8z"/></svg>',
-        'class' => 'btn btn-lg secondary-btn mx-1'  
-                ];
-    $profileTabs = [
-        [
-            'id' => 'Reactions-tab',
-            'ariaControls' => 'ReactionsContent',
-            'txt' => 'info'
-        ],
-        [
-            'id' => 'Saved-tab',
-            'ariaControls' => 'SavedContent',
-            'txt' => 'Saved'
-        ],
-        [
-            'id' => 'Following-tab',
-            'ariaControls' => 'FollowingContent',
-            'txt' => 'Following'
-        ]
-    ];
-    // $activeTab = 'info';
-@endphp
+
 @section('content')
-    <div class="container my-4 p-4">
-            <!-- User Profile Card -->
-            <div class="card mb-4 shadow-sm p-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <!-- Left: Profile Avatar -->
-                        <div class="me-4">
-                            <x-profile_avatar :user="$user" :size="80" />
-                        </div>
-                        
-                        <!-- Middle: User Information -->
-                        <div class="flex-grow-1">
-                            <h3 class="fw-bold mb-1">{{ $user->name }}</h3>
-                            <p class="text-muted mb-2">{{ $user->email }}</p>
+<div class="container-fluid">
+    <!-- Profile Header Section -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <!-- Avatar -->
+                            <div class="col-auto">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-secondary text-white" 
+                                     style="width: 80px; height: 80px; font-size: 24px; font-weight: 600;">
+                                    MN
+                                </div>
+                            </div>
                             
-                            <!-- Stats Row -->
-                            <div class="d-flex mt-2">
-                                <div class="me-4">
-                                    <span class="fw-bold">10</span> {{-- $followedWriters->count() ?? 0 --}}
-                                    <span class="text-muted small">Following</span>
-                                </div>
-                                <div class="me-4">
-                                    <span class="fw-bold">11</span> {{-- $user->reactions->count() ?? 0 --}}
-                                    <span class="text-muted small">Reactions</span> 
-                                </div>
-                                <div>
-                                    <span class="fw-bold">12</span> {{-- $user->comments->count() ?? 0 --}}
-                                    <span class="text-muted small">Comments</span>
+                            <!-- Profile Info -->
+                            <div class="col">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h2 class="mb-1" style="font-weight: 600;">Moatamen Naief</h2>
+                                        <p class="text-muted mb-3">Tech enthusiast and software developer</p>
+                                        
+                                        <!-- Tags -->
+                                        <div class="mb-3">
+                                            <span class="badge me-2" style="background-color: var(--btn-color); color: white; padding: 6px 12px;">React</span>
+                                            <span class="badge me-2" style="background-color: var(--btn-color); color: white; padding: 6px 12px;">JavaScript</span>
+                                            <span class="badge me-2" style="background-color: var(--btn-color); color: white; padding: 6px 12px;">Web Development</span>
+                                            <span class="badge" style="background-color: var(--btn-color); color: white; padding: 6px 12px;">AI</span>
+                                        </div>
+                                        
+                                        <!-- Stats -->
+                                        <div class="row">
+                                            <div class="col-auto">
+                                                <div class="text-center">
+                                                    <h4 class="mb-0" style="font-weight: 700;">24</h4>
+                                                    <small class="text-muted">Articles Read</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <div class="text-center">
+                                                    <h4 class="mb-0" style="font-weight: 700;">3</h4>
+                                                    <small class="text-muted">Writers Following</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <div class="text-center">
+                                                    <h4 class="mb-0" style="font-weight: 700;">12</h4>
+                                                    <small class="text-muted">Reactions</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="text-end">
+                                        <button class="btn btn-subscribe mb-2 d-block" style="width: 180px; padding: 12px 20px;">Edit Profile</button>
+                                        <button class="btn secondary-btn d-block" style="width: 180px; padding: 12px 20px;">Account Settings</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Right: Edit Button -->
-                        <div class="d-flex flex-column align-items-end">
-                            <a href="#" class="btn btn-lg btn-subscribe mb-2" 
-                               onclick="document.getElementById('info-tab').click();">
-                                <i class="fas fa-edit me-1"></i> Edit Profile
-                            </a>
-
-                            <a href="#" class="btn btn-lg secondary-btn" 
-                               onclick="document.getElementById('info-tab').click();">
-                                <i class="fas fa-edit me-1"></i> Edit Profile
-                            </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="row mt-4 ">
+            <div class="col-12 ">
+                <ul class="nav nav-pills border-bottom " id="profileTab" role="tablist" style="border-color: #e9ecef !important;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active border-0 bg-transparent" id="reading-history-tab" 
+                                data-bs-toggle="pill" data-bs-target="#reading-history" type="button" 
+                                role="tab" aria-controls="reading-history" aria-selected="true"
+                                style="color: var(--primary-text); font-weight: 500;">
+                            Reading History
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link border-0 bg-transparent" id="reactions-tab" 
+                                data-bs-toggle="pill" data-bs-target="#reactions" type="button" 
+                                role="tab" aria-controls="reactions" aria-selected="false"
+                                style="color: var(--tab-txt); font-weight: 500;">
+                            Your Reactions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link border-0 bg-transparent" id="subscriptions-tab" 
+                                data-bs-toggle="pill" data-bs-target="#subscriptions" type="button" 
+                                role="tab" aria-controls="subscriptions" aria-selected="false"
+                                style="color: var(--tab-txt); font-weight: 500;">
+                            Subscriptions
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content my-4 card p-3 bg-whit" id="profileTabContent">
+            <!-- Reading History Tab -->
+            <div class="tab-pane fade show active" id="reading-history" role="tabpanel" 
+                 aria-labelledby="reading-history-tab">
+                <h4 class="mb-4" style="font-weight: 600;">Recently Read Articles</h4>
+                
+                <div class="row">
+                    <!-- Article 1 -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card border-1 border-light-subtle articall-card-hover h-100">
+                            <div class="article-image-container">
+                                <div class="d-flex align-items-center justify-content-center h-100" 
+                                     style="background-color: #e8f5f5; color: var(--btn-color); font-size: 2rem;">
+                                    &lt;/&gt;
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge" style="background-color: var(--btn-color); color: white; font-size: 0.75rem;">Web Development</span>
+                                    <small class="text-muted ms-2">April 20, 2025</small>
+                                </div>
+                                <h5 class="card-title mb-3" style="font-weight: 600; line-height: 1.4;">
+                                    The Future of Web Development: AI-Driven Interfaces
+                                </h5>
+                                <p class="text-muted mb-3" style="font-size: 0.9rem;">
+                                    Discover how artificial intelligence is transforming the landscape of web development, enabling more intuitive user...
+                                </p>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 24px; height: 24px; font-size: 0.75rem;">S</div>
+                                        <small class="text-muted">Sarah Johnson</small>
+                                    </div>
+                                    <small class="text-muted">12 min read</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Article 2 -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card border-0 shadow-sm articall-card-hover h-100">
+                            <div class="article-image-container">
+                                <div class="d-flex align-items-center justify-content-center h-100" 
+                                     style="background-color: #e8f5f5; color: var(--btn-color); font-size: 2rem;">
+                                    &lt;/&gt;
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge" style="background-color: var(--btn-color); color: white; font-size: 0.75rem;">Web Development</span>
+                                    <small class="text-muted ms-2">April 18, 2025</small>
+                                </div>
+                                <h5 class="card-title mb-3" style="font-weight: 600; line-height: 1.4;">
+                                    Understanding the New React Server Components
+                                </h5>
+                                <p class="text-muted mb-3" style="font-size: 0.9rem;">
+                                    React Server Components represent a paradigm shift in how we build React applications. This article explores the...
+                                </p>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 24px; height: 24px; font-size: 0.75rem;">A</div>
+                                        <small class="text-muted">Alex Chen</small>
+                                    </div>
+                                    <small class="text-muted">8 min read</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Article 3 -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card border-0 shadow-sm articall-card-hover h-100">
+                            <div class="article-image-container">
+                                <div class="d-flex align-items-center justify-content-center h-100" 
+                                     style="background-color: #e8f5f5; color: var(--btn-color); font-size: 2rem;">
+                                    &lt;/&gt;
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge" style="background-color: var(--btn-color); color: white; font-size: 0.75rem;">AI & Machine Learning</span>
+                                    <small class="text-muted ms-2">April 15, 2025</small>
+                                </div>
+                                <h5 class="card-title mb-3" style="font-weight: 600; line-height: 1.4;">
+                                    Machine Learning Models for Predictive Analytics
+                                </h5>
+                                <p class="text-muted mb-3" style="font-size: 0.9rem;">
+                                    Learn about the most effective machine learning models for implementing predictive analytics in your business applications.
+                                </p>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 24px; height: 24px; font-size: 0.75rem;">M</div>
+                                        <small class="text-muted">Michael Rodriguez</small>
+                                    </div>
+                                    <small class="text-muted">10 min read</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-        <x-taps :tabs="$profileTabs" :activeTab="$activeTab" />
-        
-        <div class="card">
-            <div class="tab-content" id="pills-tabContent">
-                <div class="tab-pane fade show active" id="Reactions-tab" role="tabpanel" aria-labelledby="info-tab" tabindex="0">
-                    <div class="card border-ligt p-2 ">
-                        <form action="" method="post" id="readerForm">              
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Name</label>
-                                <input type="text" name="name" id="name" class="form-control" value="{{$user->name}}">
-                            </div>
-        
-                            <div class="mb-3">
-                                <label for="profile_email" class="form-label">Email</label>
-                                <input type="email" name="profile_email" id="profile_email" class="form-control" value="{{$user->email}}">
-                            </div>
-        
-                            <div class="mb-3">
-                                <label for="profile_password" class="form-label">Old Password</label>
-                                <input type="password" name="profile_password" id="profile_password" class="form-control" placeholder="Enter your Current Password">
-                            </div>
-        
-                            <div class="mb-3">
-                                <label for="profile_NewPassword" class="form-label">New Password</label>
-                                <input type="password" name="profile_NewPassword" id="profile_NewPassword" class="form-control" placeholder="Leave empty to keep current password">
-                            </div>
-        
-                            <div class="d-flex justify-content-end">
-                                <button type="submit" name="updateReader" class="btn btn-subscribe fw-bold">
-                                    Update
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <!-- Your Reactions Tab -->
+            <div class="tab-pane fade" id="reactions" role="tabpanel" aria-labelledby="reactions-tab">
+                <h4 class="mb-4" style="font-weight: 600;">Your Reactions</h4>
+                <div class="text-center py-5">
+                    <p class="text-muted">No reactions yet. Start engaging with articles to see your activity here.</p>
                 </div>
-        
-                <div class="tab-pane fade " id="SavedContent" role="tabpanel" aria-labelledby="Saved-tab" tabindex="0">
-                    <div class="card border-ligt p-2">
-                        <div class="card-body mt-2">
-                            <h5 class="card-title fw-bold m-2">Saved Articles</h5>
-                            <div class="card-body mt-2 ">
-                                <x-dashboard-table :vars="$savedArticles"/>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            
+            <!-- Subscriptions Tab -->
+            <div class="tab-pane fade" id="subscriptions" role="tabpanel" aria-labelledby="subscriptions-tab">
+                <h4 class="mb-4" style="font-weight: 600;">Your Subscriptions</h4>
+                <div class="text-center py-5">
+                    <p class="text-muted">No subscriptions yet. Follow writers and topics to see them here.</p>
                 </div>
-        
-                <div class="tab-pane fade " id="FollowingContent" role="tabpanel" aria-labelledby="Following-tab" tabindex="0">
-                    <div class="card border-ligt p-2">
-                        <div class="card-body mt-2 ">
-                            <h5 class="card-title fw-bold m-2">writers you follow</h5>
-                            <footer class="text-muted">the writers that you follow will be able to send to you a weekly/monthly newsletter in thar niche</footer>
-                        
-                            <div class="card-body mt-2">
-                                <x-dashboard-table :vars="$followedWriters"/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
+</div>
 
+<style>
+.nav-pills .nav-link.active {
+    background-color: transparent !important;
+    border-bottom: 2px solid var(--btn-color) !important;
+    color: var(--primary-text) !important;
+    border-radius: 0 !important;
+}
+
+.nav-pills .nav-link {
+    border-radius: 0 !important;
+    padding: 1rem 0 !important;
+    margin-right: 2rem !important;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: transparent !important;
+    color: var(--btn-color) !important;
+}
+
+.article-image-container {
+    height: 200px;
+    overflow: hidden;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+</style>
 @endsection

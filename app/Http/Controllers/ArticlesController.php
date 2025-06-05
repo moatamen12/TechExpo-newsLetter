@@ -138,7 +138,7 @@ class ArticlesController extends Controller
     //create an article
     public function create(){
         //authinticate the user
-        Gate::authorize('accessDashboard', Auth::user());      
+        // Gate::authorize('accessDashboard', Auth::user());      
         $categories = \App\Models\Categorie::orderBy('name')->get(); ; // Fetch categories
         return view('dashboard.articles.create', compact('categories'));
         
@@ -147,7 +147,7 @@ class ArticlesController extends Controller
     //stor the article in the db
     public function store(Request $request){
         //authinticate the user
-        Gate::authorize('accessDashboard', Auth::user()); 
+        // Gate::authorize('accessDashboard', Auth::user()); 
 
         //get the authenticated user
         $user = Auth::id();
@@ -204,14 +204,21 @@ class ArticlesController extends Controller
     //editing an articles
     public function edit($article_id)
     {
-        Gate::authorize('accessDashboard', Auth::user());
+        // Gate::authorize('accessDashboard', Auth::user());
         $article = Article::findOrFail($article_id);
-        if (!$article) {
+        // Validate the user is the writer of this article
+        $user = Auth::id();
+        $profile = UserProfiles::where('user_id', $user)->first();
+        if (!$profile || $article->author_id !== $profile->profile_id) {
+            return redirect()->route('dashboard.articles')->with('error', 'You are not authorized to edit this article.');
+        }
+        // dd($article->author_id);
+        if (!$article) 
+        {
             return redirect()->route('dashboard.articles')->with('error', 'Article not found.');
         }
         // Return the edit view with the article data if it exests
         $categories = \App\Models\Categorie::orderBy('name')->get(); ; // Fetch categories
-
         return view('dashboard.articles.edit', [
             'article' => $article,
             'categories' => $categories, 

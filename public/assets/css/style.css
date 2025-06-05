@@ -26,13 +26,13 @@ pre, code {
 }
 
 .secondary-btn{
-    background-color:var(--secoundary-bg) ;
-    color:#000 !important;
-    border: 1px solid var(--btn-secondary) !important;
+    background-color:var(--btn-secondary) !important;
+    color:var(--primary-text) !important;
+    border: 1px solid var(--secoundary-bg) !important;
 
 }
 .secondary-btn:hover{
-    background-color: var(--btn-secondary) !important;
+    background-color: var(--btn-secondary-hover) !important;
     color:#000 !important;
 }
 
@@ -540,7 +540,9 @@ button.btn.btn-bg{  /* for the google sub */
 
     --btn-color: #229799; 
     --btn-hover: #37a3a5;
-    --btn-secondary: #cce8e8 ;
+
+    --btn-secondary: #fafaff ;
+    --btn-secondary-hover: #eafafb;
      
     --accent-color: #e2ebf4;    
     --highlight-color: #00BCD4;

@@ -48,28 +48,16 @@ Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show']
 Route::get('/profile',[ProfilesController::class,'index'])->name('profile');
 
 
-//dashpords routes
-Route::get('/dashboard',[DashboardController::class ,'index'])// the dashboard page
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('dashboard');
-//show Routes
-Route::get('/dashboard/articles',[DashboardController::class ,'articles'])   // to show the articles                  
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('dashboard.articles');
-
-// Article creation routes
-Route::get('/dashboard/articles/create', [ArticlesController::class, 'create']) //creating an article 
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('articles.create');
-//store an article
-Route::post('/dashboard/articles', [ArticlesController::class, 'store'])//storing it
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('articles.store'); 
-Route::post('/dashboard/upload-image', [ArticlesController::class, 'uploadImage'])->name('articles.upload-image'); // i have mo idea
+Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
+    Route::get('/dashboard',[DashboardController::class ,'index'])->name('dashboard');
+    Route::get('/dashboard/articles',[DashboardController::class ,'articles'])->name('dashboard.articles');
+    Route::get('/dashboard/articles/create', [ArticlesController::class, 'create'])->name('articles.create');
+    Route::post('/dashboard/articles', [ArticlesController::class, 'store'])->name('articles.store');
+    Route::post('/dashboard/upload-image', [ArticlesController::class, 'uploadImage'])->name('articles.upload-image');
+    Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit'])->name('articles.edit');
+    Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update'])->name('articles.update');
+    Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy'])->name('articles.destroy');
+});
 
 //edit an article 
 Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit']) //editing an article 

@@ -7,7 +7,9 @@
                 <div class="col-md-6 col-lg-5">
                     <div class="card shadow-sm  m-3 p-3">
                         <div class="text-center">
-                            <h2 class="fw-bold">⟨TechExpo/⟩</h2>
+                            <div class="logo display-5 my-1" style="color: #229799">
+                                <span class="text-3xl mr-1 r ">⟨</span>TechExpo<span class=" text-3xl ml-1">/⟩</span>
+                            </div>
                             <p class="text-muted">Your source for tech insights and news</p>
                         </div>
                         {{-- nav --}}

@@ -28,8 +28,17 @@ class AppServiceProvider extends ServiceProvider
         //pagination 
         Paginator::useBootstrapFive();
         //authintication gates
-        Gate::define('accessDashboard',function(User $user){
-            return $user->userProfile->exists();
+        Gate::define('accessDashboard',function(User $user)
+        {
+            if ($user->userProfile()->exists()) {
+                return Response::allow();
+            }
+            return Response::deny();
         });
+        // Gate::define('accessProfile',function(User $user){
+        //     if ($user->exists()){
+        //     }
+        // });
+        // Gate::defin('accessProfile',function(User $user))
     }
 }
