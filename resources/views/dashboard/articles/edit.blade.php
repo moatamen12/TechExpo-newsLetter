@@ -99,23 +99,17 @@
                         </select>
                     </div> 
                 </div>
-                <!-- Add this hidden input for status just before your buttons -->
-                <div class="d-flex justify-content-end">
-                    <div class="justify-content-between align-items-center mb-3">
-                        <div>
-                            {{-- "Save As Draft" button --}}
-                            <button type="submit" name="status" value="draft" class="btn secondary-btn me-2" id="save-draft-btn">Save As Draft</button>
-                            
-                            {{-- "Post Article" button --}}
-                            <button type="submit" name="status" value="published" class="btn btn-subscribe" id="publish-btn">Save Edit</button>
-                        </div>
-                        <div class="justify-content-start">
-                            <a href="{{route('dashboard')}}" class="btn text-danger">Cancel</a>
-                        </div>
-
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <a href="{{route('dashboard')}}" class="btn text-danger">Cancel</a>
                     </div>
-
-
+                    <div>
+                        {{-- "Save As Draft" button --}}
+                        <button type="submit" name="status" value="draft" class="btn secondary-btn me-2" id="save-draft-btn">Save As Draft</button>
+                        
+                        {{-- "Post Article" button --}}
+                        <button type="submit" name="status" value="published" class="btn btn-subscribe" id="publish-btn">Publish Article</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -126,123 +120,4 @@
 @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script src="{{ asset('assets/js/TinyMCE_init.js') }}"></script>
-    <script >
-        // // Initialize TinyMCE
-        // tinymce.init({
-        //     selector: '#content',
-        //     branding: false,
-        //     plugins: 'preview anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-        //     // Remove preview from the toolbar
-        //     toolbar: [
-        //         'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | align lineheight ',
-        //         ' numlist bullist indent outdent | link image table| emoticons charmap removeformat',
-        //     ],
-        //     height: 500,
-        //     // Add custom preview button
-        //     setup: function(editor) {
-        //         // Add the custom preview button
-        //         // editor.ui.registry.addButton('customPreview', {
-        //         //     text: 'Preview',
-        //         //     icon: 'preview',
-        //         //     onAction: function () {
-        //         //         editor.execCommand('mcePreview');
-        //         //     }
-        //         // });
-
-        //         editor.on('init', function() {
-        //             // Add the custom preview button to the far right
-        //             setTimeout(function() {
-        //                 // Create a custom floating button
-        //                 const editorContainer = editor.getContainer();
-        //                 const customBtn = document.createElement('button');
-        //                 customBtn.className = 'custom-preview-btn';
-        //                 customBtn.innerHTML = 'Preview';
-        //                 customBtn.style.position = 'absolute';
-        //                 customBtn.style.right = '10px';
-        //                 customBtn.style.top = '5px';
-        //                 customBtn.style.zIndex = '10';
-        //                 customBtn.style.backgroundColor = '#229799';
-        //                 customBtn.style.color = 'white';
-        //                 customBtn.style.border = 'none';
-        //                 customBtn.style.borderRadius = '4px';
-        //                 customBtn.style.padding = '6px 12px';
-        //                 customBtn.style.display = 'flex';
-        //                 customBtn.style.alignItems = 'center';
-        //                 customBtn.style.gap = '5px';
-        //                 customBtn.style.cursor = 'pointer';
-        //                 customBtn.style.fontWeight = '500';
-        //                 customBtn.style.fontSize = '14px';
-                        
-        //                 // Add hover effect
-        //                 customBtn.addEventListener('mouseenter', function() {
-        //                     this.style.backgroundColor = '#48CFCB';
-        //                 });
-        //                 customBtn.addEventListener('mouseleave', function() {
-        //                     this.style.backgroundColor = '#229799';
-        //                 });
-                        
-        //                 // Add click action
-        //                 customBtn.addEventListener('click', function() {
-        //                     editor.execCommand('mcePreview');
-        //                 });
-                        
-                        
-        //                 // Add to editor
-        //                 editorContainer.appendChild(customBtn);
-        //             }, 200);
-        //         });
-        //     },
-        //     // // Rest of your configuration 
-        //     // images_upload_url: '{{ route("articles.upload-image") }}',
-        //     // automatic_uploads: true,
-        //     // file_picker_types: 'image',
-        //     // images_reuse_filename: true,
-        //     // images_upload_handler: function (blobInfo, success, failure) {
-        //     //     var xhr, formData;
-        //     //     xhr = new XMLHttpRequest();
-        //     //     xhr.withCredentials = false;
-        //     //     xhr.open('POST', '{{ route("articles.upload-image") }}');
-        //     //     var token = '{{ csrf_token() }}';
-        //     //     xhr.setRequestHeader("X-CSRF-Token", token);
-        //     //     xhr.onload = function() {
-        //     //         var json;
-        //     //         if (xhr.status != 200) {
-        //     //             failure('HTTP Error: ' + xhr.status);
-        //     //             return;
-        //     //         }
-        //     //         json = JSON.parse(xhr.responseText);
-        //     //         if (!json || typeof json.location != 'string') {
-        //     //             failure('Invalid JSON: ' + xhr.responseText);
-        //     //             return;
-        //     //         }
-        //     //         success(json.location);
-        //     //     };
-        //     //     formData = new FormData();
-        //     //     formData.append('file', blobInfo.blob(), blobInfo.filename());
-        //     //     xhr.send(formData);
-        //     // }
-        // });
-
-        // // Image preview functionality
-        // document.getElementById('featured_image').onchange = function(e) {
-        //     const preview = document.getElementById('image-preview');
-        //     const container = document.querySelector('.preview-container');
-        //     const file = e.target.files[0];
-            
-        //     if (file) {
-        //         preview.src = URL.createObjectURL(file);
-        //         container.classList.remove('d-none');
-        //     } else {
-        //         preview.src = '#';
-        //         container.classList.add('d-none');
-        //     }
-        // };
-
-        // document.getElementById('remove-image').onclick = function() {
-        //     const input = document.getElementById('featured_image');
-        //     const container = document.querySelector('.preview-container');
-        //     input.value = '';
-        //     container.classList.add('d-none');
-        // };
-    </script>
 @endpush

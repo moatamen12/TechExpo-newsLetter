@@ -107,13 +107,17 @@
                         </select>
                     </div> 
                 </div>
-                <!-- Add this hidden input for status just before your buttons -->
-                <div class="d-flex justify-content-end">
-                    {{-- "Save As Draft" button --}}
-                    <button type="submit" name="status" value="draft" class="btn secondary-btn me-2" id="save-draft-btn">Save As Draft</button>
-                    
-                    {{-- "Post Article" button --}}
-                    <button type="submit" name="status" value="published" class="btn btn-subscribe" id="publish-btn">Post Article</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <a href="{{route('dashboard')}}" class="btn text-danger">Cancel</a>
+                    </div>
+                    <div>
+                        {{-- "Save As Draft" button --}}
+                        <button type="submit" name="status" value="draft" class="btn secondary-btn me-2" id="save-draft-btn">Save As Draft</button>
+                        
+                        {{-- "Post Article" button --}}
+                        <button type="submit" name="status" value="published" class="btn btn-subscribe" id="publish-btn">Publish Article</button>
+                    </div>
                 </div>
             </div>
         </div>

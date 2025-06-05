@@ -22,7 +22,6 @@ class DashboardController extends Controller
     public function index()
     {
         Gate::authorize('accessDashboard', Auth::user());
-
         $profile_id = $this->getCorrentUser();
 
         $articles = $this->TopArticles(5, $profile_id);
@@ -42,41 +41,12 @@ class DashboardController extends Controller
         $published = $this->publishedArticles($profile_id);
         $draft = $this->draftArticles($profile_id);
         // $scheduled = $this->scheduledArticles($profile_id);
-
-        // Handle AJAX requests for load more functionality
-        if ($request->ajax()) {
-            $type = $request->get('type', 'published');
-            
-            switch ($type) {
-                case 'published':
-                    $data = $published;
-                    $viewName = 'components.dashboard-table-rows';
-                    break;
-                case 'draft':
-                    $data = $draft;
-                    $viewName = 'components.dashboard-table-rows';
-                    break;
-                // case 'scheduled':
-                //     $data = $scheduled;
-                //     $viewName = 'components.dashboard-table-rows';
-                //     break;
-                default:
-                    $data = $published;
-                    $viewName = 'components.dashboard-table-rows';
-            }
-
-            return response()->json([
-                'html' => view($viewName, ['vars' => $data])->render(),
-                'has_more_pages' => $data->hasMorePages(),
-                'next_page_url' => $data->nextPageUrl(),
-            ]);
-        }
-        // dd($articles);
         return view('dashboard.articles', [
             'published' => $published,
             'draft' => $draft,
-            // 'archived' => $scheduled,
-        ]);  
+            // 'scheduled' => $scheduled,
+        ]);
+
     } 
 
     // get the user information 

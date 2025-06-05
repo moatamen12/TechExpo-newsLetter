@@ -71,16 +71,6 @@
                 <h5 class="card-title fw-bold m-2">Published Articles</h5>
                 <div class="card-body mt-2">
                     <x-dashboard-table :vars="$published" tableID="published-articles-table"/>
-                    @if ($published->hasMorePages())
-                        <div class="text-center mt-3">
-                            <button class="btn btn-subscribe-outline dashboard-load-more-btn" 
-                                    data-next-page-url="{{ $published->nextPageUrl() }}" 
-                                    data-table-target="#published-articles-table tbody" {{-- Target tbody of the table --}}
-                                    data-type="Published">
-                                Load More Published
-                            </button>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>  
@@ -90,17 +80,7 @@
             <div class="card border-ligt p-2">
                 <h5 class="card-title fw-bold m-2">Draft Articles</h5>
                 <div class="card-body mt-2" >
-                    <x-dashboard-table :vars="$draft" tableID="draft-articles-table" />
-                    @if ($draft->hasMorePages())
-                        <div class="text-center mt-3">
-                            <button class="btn  btn-subscribe-outline dashboard-load-more-btn" 
-                                    data-next-page-url="{{ $draft->nextPageUrl() }}" 
-                                    data-table-target="#draft-articles-table tbody"
-                                    data-type="Draft">
-                                Load More Drafts
-                            </button>
-                        </div>
-                    @endif
+                    <x-dashboard-table :vars="$draft" tableID="draft-articles-table"/>
                 </div>
             </div>
         </div>
@@ -126,67 +106,5 @@
     </div>
 </section>
 @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.dashboard-load-more-btn').forEach(button => {
-            // Store original button text if you want to reset it exactly
-            // const originalButtonText = button.innerHTML; 
-
-            button.addEventListener('click', function () {
-                let nextPageUrl = this.dataset.nextPageUrl;
-                const tableTargetSelector = this.dataset.tableTarget;
-                const articlesContainer = document.querySelector(tableTargetSelector); // This should be the <tbody>
-                const buttonEl = this;
-                const buttonType = this.dataset.type || 'Items'; // Fallback type
-
-                // Add right after the querySelector line
-                console.log('Target selector:', tableTargetSelector);
-                console.log('Found container:', articlesContainer);
-
-                if (!nextPageUrl || !articlesContainer) {
-                    console.error('Load more button is missing URL or target container cannot be found.');
-                    buttonEl.style.display = 'none';
-                    return;
-                }
-
-                const originalButtonText = `Load More ${buttonType}`; // Reconstruct original text
-                buttonEl.disabled = true;
-                buttonEl.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading ${buttonType}...`;
-
-                fetch(nextPageUrl, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    }
-                })
-                .then(response => {
-                    console.log('Response status:', response.status); // Debug
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Data received:', data); // Debug the response
-                    
-                    if (data.html && data.html.trim() !== "") {
-                        articlesContainer.insertAdjacentHTML('beforeend', data.html);
-                    }
-
-                    if (data.has_more_pages && data.next_page_url) {
-                        buttonEl.dataset.nextPageUrl = data.next_page_url; // Update for the next click
-                        buttonEl.disabled = false;
-                        buttonEl.innerHTML = originalButtonText;
-                    } else {
-                        buttonEl.style.display = 'none'; // No more pages, hide the button
-                    }
-                })
-                .catch(error => {
-                    console.error(`Error loading more ${buttonType}:`, error);
-                    buttonEl.disabled = false;
-                    buttonEl.innerHTML = `Error loading. Retry ${buttonType}?`;
-                });
-            });
-        });
-    });
-</script>
 @endpush
 @endsection
