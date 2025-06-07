@@ -45,7 +45,15 @@ Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show']
 
 
 // route to the profile page
-Route::get('/profile',[ProfilesController::class,'index'])->name('profile');
+Route::get('/profile',[ProfilesController::class,'index'])
+                      ->middleware('auth')  
+                      ->can('accessProfile') 
+                      ->name('profile');
+// //reader profile
+Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
+                      ->middleware('auth')  
+                      ->can('accessProfile') 
+                      ->name('reader_profile');
 
 
 Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
@@ -59,28 +67,28 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy'])->name('articles.destroy');
 });
 
-//edit an article 
-Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit']) //editing an article 
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('articles.edit');
-
-// Update an article
-Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update']) //save the edit of an  article 
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('articles.update');
-
-//Destroy an article
-Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy']) //deleting an article 
-                        ->middleware('auth') 
-                        ->can('accessDashboard')
-                        ->name('articles.destroy');
-
-// Route::get('/dashboard/articles/edit{article}', [ArticlesController::class, 'edit']) //editing an article 
+// //edit an article 
+// Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit']) //editing an article 
 //                         ->middleware('auth') 
 //                         ->can('accessDashboard')
 //                         ->name('articles.edit');
+
+// // Update an article
+// Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update']) //save the edit of an  article 
+//                         ->middleware('auth') 
+//                         ->can('accessDashboard')
+//                         ->name('articles.update');
+
+// //Destroy an article
+// Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy']) //deleting an article 
+//                         ->middleware('auth') 
+//                         ->can('accessDashboard')
+//                         ->name('articles.destroy');
+
+// // Route::get('/dashboard/articles/edit{article}', [ArticlesController::class, 'edit']) //editing an article 
+// //                         ->middleware('auth') 
+// //                         ->can('accessDashboard')
+// //                         ->name('articles.edit');
 
 
 

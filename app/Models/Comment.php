@@ -33,6 +33,9 @@ class Comment extends Model
     public function replies(){
         return $this->hasMany(Comment::class, 'parent_id', 'comment_id');
     }
+    // public function hasReolies(){
+    //     return $this->replies()->exists();
+    // }
     
     //relation with the parent comment 
     public function parent(){

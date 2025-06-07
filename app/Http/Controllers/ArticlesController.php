@@ -232,6 +232,7 @@ class ArticlesController extends Controller
 
         //geting the article by id
         $article = Article::findOrFail($article_id);
+
         if (!$article) {
             return redirect()->route('dashboard.articles')->with('error', 'Article not found.');
         }
@@ -300,8 +301,9 @@ class ArticlesController extends Controller
 
     public function destroy($article_id){
         $article = Article::findOrFail($article_id);
+        //authinticate the user
         if(!$article) {
-            return redirect()->route('login')->with('error', 'Article not found.');
+            return redirect()->route('dashboard.articles')->with('error', 'Article not found.');
         }
         // Check if the authenticated user is the author of the article
         $user = Auth::id();

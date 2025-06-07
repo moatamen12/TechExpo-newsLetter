@@ -114,7 +114,7 @@
                             {{-- <li><a href="#" data-bs-toggle="modal" data-bs-target="#subscribeModal" class="text-color text-decoration-none">Subscribe</a></li> --}}
                         </ul>
                     </div>
-
+                    
                     {{-- footer btns --}}
                     <div class="col-md-3 mb-3"> 
                         <h5>Subscribe and join our community </h5>

@@ -6,9 +6,10 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-class RedirectifNotAuthor
+class RedirectIfNotAuthor
 {
     /**
      * Handle an incoming request.
@@ -20,14 +21,16 @@ class RedirectifNotAuthor
     public function handle(Request $request, Closure $next): SymfonyResponse
     {
         if (Auth::check()) {
-            // Check the gate. Auth::user() is automatically passed to the gate.
-            if (Gate::denies('accessDashboard')) {
-                return redirect()->route('Home')->with('error', 'You need a writer profile to access the dashboard.');
+            // Check the gate
+            $response = Gate::inspect('accessDashboard');
+            if ($response->denied()) {
+                Session::flash('error_gate', $response->message());
+                return redirect()->route('home');
             }
         } else {
             // If user is not authenticated, redirect to login.
-            // This middleware should typically run after 'auth' middleware.
-            return redirect()->route('login');
+             Session::flash('error_gate', 'You must be logged in to access this page and be an author.');
+            return redirect()->route('login')->with('error_gate', 'You must be logged in to access this page and be an author.');
         }
 
         return $next($request);

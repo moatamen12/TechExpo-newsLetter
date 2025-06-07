@@ -6,7 +6,7 @@
 }
 
 body{
-    background-color: var(--primary-bg) ;
+    background-color: var(--primary-bg) !important;
     color: var(--primary-text) !important;
     font-family: 'Inter', sans-serif;
 }
@@ -16,7 +16,9 @@ h1,h2,h3,h4,h5,h6{
 pre, code {
     font-family: 'JetBrains Mono', monospace; /* Apply JetBrains Mono to code elements, fallback to generic monospace */
 }
-
+/* i{
+    color: var(--accent-color) !important;
+} */
 
 
 /* generals  */
@@ -52,7 +54,9 @@ pre, code {
     border-color: var(--btn-hover) !important;
     color: var(--accent-color)!important;
 }
-
+a{
+    color: var(--primary-txt) !important;
+}
 
 .pagination .page-item .page-link{
     background-color: var(--primary-bg) !important;
@@ -74,6 +78,7 @@ pre, code {
 }
 .nav-pills .nav-link.active{
     box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important;
+    /* background-color: var(--btn-hover) !important; */
 }
 
 .danger{

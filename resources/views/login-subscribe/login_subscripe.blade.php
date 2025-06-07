@@ -10,6 +10,12 @@
                             <div class="logo display-5 my-1" style="color: #229799">
                                 <span class="text-3xl mr-1 r ">⟨</span>TechExpo<span class=" text-3xl ml-1">/⟩</span>
                             </div>
+                                @if(session('error_gate'))
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <i class="fas fa-lock me-2"></i><strong>Access Denied:</strong> {{ session('error_gate') }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                @endif
                             <p class="text-muted">Your source for tech insights and news</p>
                         </div>
                         {{-- nav --}}
@@ -83,7 +89,7 @@
                                             <div class="col-md-12">
                                                 <label for="name" class="form-label mt-2">name<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control form-control-sm" name="name"
-                                                       id="name" placeholder="JonDou" aria-required="true" 
+                                                       id="name" placeholder="Your Full Name" aria-required="true" 
                                                        autocomplete="name" value="{{old('name')}}" required>
                                                 <x-error_msg field="name"/> {{-- error display --}}
                                             </div>

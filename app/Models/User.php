@@ -68,11 +68,19 @@ class User extends Authenticatable
         return $this->hasMany(Comment::class, 'user_id', 'user_id');
     }
 
-
     //relation with the userSavedArticle model "relation one to many"
     public function userSavedArticle()
     {
         return $this->hasMany(userSavedArticle::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * The users that this user is following.
+     */
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'followed_id')
+                    ->with('userProfile'); // Eager load user profiles for display
     }
 
 

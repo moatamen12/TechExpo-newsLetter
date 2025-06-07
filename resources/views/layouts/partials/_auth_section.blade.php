@@ -15,9 +15,16 @@
 @auth
     @if ($context === 'navbar')
         <div class="d-flex align-items-center">
-            <div class="me-2">
-                <a href="{{route('dashboard')}}" class="btn btn-subscribe rounded-3">Dashboard</a>
-            </div>
+            @if(Auth::user()->userProfile()->exists())
+                <div class="me-2">
+                    <a href="{{route('dashboard')}}" class="btn btn-subscribe rounded-3">Dashboard</a>
+                </div>
+            @else
+                <div class="me-2">
+                    <a href="{{route('profile')}}" class="btn btn-subscribe rounded-3"><i class="fa-regular fa-pen-to-square me-2" ></i> Write</a>
+                </div>
+            @endif
+
             <div class="dropdown">
                 <button class="btn btn-link p-0" type="button" id="userDropdownNavbar" data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="avatar-circle" style="width: 40px; height: 40px; border-radius: 50%; background-color: #6c757d; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; overflow: hidden;">
@@ -32,7 +39,7 @@
                     <li class="px-3 py-1 text-muted small">Signed in as <br><strong>{{ Auth::user()->name }}</strong></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="{{ route('dashboard') }}">My Dashboard</a></li>
-                    <li><a class="dropdown-item" href="#">Profile Settings</a></li>
+                    <li><a class="dropdown-item" href="{{ route('profile') }}">Profile Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form action="{{ route('logout') }}" method="POST" class="dropdown-item p-0">
@@ -59,7 +66,7 @@
                 <li class="px-3 py-1 text-muted small">Signed in as <br><strong>{{ Auth::user()->name }}</strong></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="{{ route('dashboard') }}">My Dashboard</a></li>
-                <li><a class="dropdown-item" href="#">Profile Settings</a></li>
+                <li><a class="dropdown-item" href="{{ route('profile') }}">Profile Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form action="{{ route('logout') }}" method="POST" class="dropdown-item p-0">

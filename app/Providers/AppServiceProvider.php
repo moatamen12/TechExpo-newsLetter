@@ -33,12 +33,14 @@ class AppServiceProvider extends ServiceProvider
             if ($user->userProfile()->exists()) {
                 return Response::allow();
             }
-            return Response::deny();
+            return Response::deny('You must be logged in to access this page.');
         });
-        // Gate::define('accessProfile',function(User $user){
-        //     if ($user->exists()){
-        //     }
-        // });
-        // Gate::defin('accessProfile',function(User $user))
+
+        Gate::define('accessProfile', function (User $user){
+            if($user->exists()){
+                return Response::allow();
+            }
+            return Response::deny('You must be logged in to access this page.');
+        });
     }
 }
