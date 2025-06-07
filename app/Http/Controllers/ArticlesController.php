@@ -192,8 +192,9 @@ class ArticlesController extends Controller
             'like_count' => 0,
             'comment_count' => 0,
             // 'creater_at' => ($validated['status'] === 'draft') ? now() : null,
-            'published_at' => ($validated['status'] === 'published') ? now() : null,
+            'published_at' => ($validated['status'] === 'published') ? now() : null,   
         ]);
+        // up the count of the authors articles count   
 
         // Redirect with success message
         $message = ($validated['status'] === 'published') ? 'Article published successfully!' : 'Article saved as draft successfully!';

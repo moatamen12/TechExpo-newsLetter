@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ArticlesController;
 use App\Http\Controllers\ContactController;
@@ -11,7 +11,12 @@ use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CommentController;
 
+// test emailing route
+Route::get('/test-email',function(){
+    $name = "test email";
+    Mail::to('motx98990@gmail.com')->send(new \App\Mail\NewsletterEmail($name));
 
+});
 
 
 //rout to the subscribe

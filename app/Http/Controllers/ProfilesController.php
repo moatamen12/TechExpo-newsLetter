@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\userSavedArticle;
 use App\Models\User;
-use App\Models\userFollower;
+use App\Models\userFollower; // Corrected model name
 use Illuminate\Support\Facades\Auth;
 
 
@@ -14,38 +14,50 @@ class ProfilesController extends Controller
 
     public function index()
     {
-        //git the authenticated user
+        //get the authenticated user
         $user = Auth::user();
 
-        if($user->userProfile()->exists()){
-            // // dd($user->userProfile()->exists());  
-            // return view('author_profile', [
-            //     'user' => $user,
-            //     // 'savedArticles' => $user->savedArticles()->paginate(5),
-            //     // 'followers' => userFollower::where('following_id', $user->id)->count(),
-            //     // 'following' => userFollower::where('follower_id', $user->id)->count(),
-            // ]);
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'You must be logged in to view this page.');
         }
-        elseif($user->exists()){
-            return  $this->readerProfile($user);
 
-        }
+        // Simplified logic: always show readerProfile for now, 
+        // you can add author-specific logic later if needed.
+        return  $this->readerProfile($user);
     }
     
     //reader profile
-    public function readerProfile($user)
+    public function readerProfile(User $user) // It's good practice to type-hint the User model
     {
-        $savedArticles = userSavedArticle::with(['article', 'user'])
-            ->where('user_id', $user->user_id)
-            ->paginate(5);
+        $savedUserArticles = userSavedArticle::with([
+            'article' => function ($query) {
+                $query->with([
+                    'author' => function ($subQuery) {
+                        $subQuery->with('user'); // This loads the User model (author) via UserProfile
+                    },
+                    'categorie' // Article model has a 'categorie' relationship
+                ]);
+            }
+        ])
+        ->where('user_id', $user->user_id) 
+        ->latest('saved_at') // Assuming 'saved_at' is the correct column in user_saved_articles
+        ->paginate(5);
 
-        dd($savedArticles);
+        // Fetch writers the user is following
+        // The getFollowedWriters scope returns a collection of userFollower models,
+        // where each 'followed' relationship is the User model of the writer.
+        $followedWritersModels = userFollower::getFollowedWriters($user->user_id)->get();
+
+        // For debugging, you can uncomment this to inspect the structure:
+        // dd($savedUserArticles, $followedWritersModels); 
+
         return view('profile.reader_profile', [                
-                'user_name' => $user->name,
-                'user_email' => $user->email,
-            'savedArticles' => $savedArticles,
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'savedArticles' => $savedUserArticles, 
+            'followedWriters' => $followedWritersModels, // Pass followed writers to the view
             'followers' => userFollower::where('following_id', $user->user_id)->count(),
-            // 'following' => userFollower::where('follower_id', $user->id)->count(),
+            // 'following' => userFollower::where('follower_id', $user->user_id)->count(), // Corrected to user_id
         ]);
     }
 }
