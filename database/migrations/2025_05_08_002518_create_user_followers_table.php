@@ -10,17 +10,17 @@ return new class extends Migration
     {
         Schema::create('user_followers', function (Blueprint $table) {
             $table->unsignedBigInteger('follower_id');
-            $table->unsignedBigInteger('followed_id');
+            $table->unsignedBigInteger('following_id');
             $table->timestamp('created_at')->useCurrent();
             
-            $table->primary(['follower_id', 'followed_id']);
+            $table->primary(['follower_id', 'following_id']);
             
             $table->foreign('follower_id')
                   ->references('user_id')
                   ->on('users')
                   ->onDelete('cascade');
                   
-            $table->foreign('followed_id')
+            $table->foreign('following_id')
                   ->references('user_id')
                   ->on('users')
                   ->onDelete('cascade');

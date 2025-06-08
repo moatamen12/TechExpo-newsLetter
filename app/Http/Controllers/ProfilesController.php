@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\userSavedArticle;
 use App\Models\User;
+use App\Models\Article;
 use App\Models\userFollower; // Corrected model name
+use App\Models\UserProfiles;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -26,7 +28,7 @@ class ProfilesController extends Controller
     }
     
     //reader profile
-    public function readerProfile(User $user) // It's good practice to type-hint the User model
+    public function readerProfile(User $user) 
     {
         $savedUserArticles = userSavedArticle::with([
             'article' => function ($query) {
@@ -42,14 +44,11 @@ class ProfilesController extends Controller
         ->latest('saved_at') // Assuming 'saved_at' is the correct column in user_saved_articles
         ->paginate(5);
 
-        // Fetch writers the user is following
-        // The getFollowedWriters scope returns a collection of userFollower models,
-        // where each 'followed' relationship is the User model of the writer.
         $followedWritersModels = userFollower::getFollowedWriters($user->user_id)->get();
-
-        // For debugging, you can uncomment this to inspect the structure:
-        // dd($savedUserArticles, $followedWritersModels); 
-
+        // dd($followedWritersModels->profile_id);
+        
+            // dd($followedWritersModels->first()->following_id);
+        
         return view('profile.reader_profile', [                
             'user_name' => $user->name,
             'user_email' => $user->email,
@@ -59,4 +58,44 @@ class ProfilesController extends Controller
             // 'following' => userFollower::where('follower_id', $user->user_id)->count(), // Corrected to user_id
         ]);
     }
+
+
+    public function show($profile_id){
+
+        $authorProfile = UserProfiles::where('profile_id', $profile_id)->first();
+
+        if (!$authorProfile) {
+            return redirect()->back()->with('error', 'Author profile not found.');
+        }
+
+        $authorUser = User::with('userProfile')
+                           ->find($authorProfile->user_id); 
+        // dd($authorUser);
+        if (!$authorUser) {
+            return redirect()->back()->with('error', 'User not found for this profile.');
+        }
+        
+        $articles = Article::with(['author.user', 'categorie'])
+            ->where('author_id', $authorProfile->profile_id)
+            ->where('status', 'published')
+            // Order by the sum of likes and comments in descending order
+            ->orderByRaw('(IFNULL(like_count, 0) + IFNULL(comment_count, 0)) DESC')
+            // Take the top 5 articles
+            ->take(5)
+            ->get();
+
+        return view('profile.show', [
+            'author' => $authorUser, 
+            'articles' => $articles,
+            'followers' => userFollower::where('following_id', $authorProfile->profile_id)->count(),
+
+            // 'following' => userFollower::where('follower_id', $authorProfile->profile_id)->count(),
+        ]);
+    }
+
+
+    // public function edit_reder(Request $request)
+    // {   
+        
+    // }
 }

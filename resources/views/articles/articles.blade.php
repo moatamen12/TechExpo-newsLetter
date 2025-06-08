@@ -17,7 +17,7 @@
                         <div class="row g-3">
                             <div class="col-lg-5 d-flex flex-column">
                                 <!-- Categories -->
-                                <spam href="#" class="badge mb-2 text-start w-50"><i class="fas fa-circle me-2 small fw-bold"></i>{{$article->categorie_name}}</spam>
+                                <spam href="#" class="badge mb-2 text-start w-50"><i class="fas fa-circle me-2 small fw-bold"></i>{{$article->categorie->name }}</spam>
                                 <!-- Title -->
                                 <h2 class="card-title">
                                     <a href="{{route('articles.show',$article->article_id)}}" class="btn-link text-reset stretched-link">{{$article->title}}</a>

@@ -19,93 +19,42 @@ class ArticlesController extends Controller
 {
     // Display the list of articles
     public function index(Request $request){
-        $query = Article::with(['author.user', 'categorie']) // Eager load author's user model and category
+        $query = Article::with(['author.user', 'categorie']) // Add 'categorie' here
                         ->where('status', 'published');
 
-        // Search functionality
-        if ($request->has('q') && $request->input('q') != '') {
-            $searchQuery = $request->input('q');
-            $query->where(function ($subQuery) use ($searchQuery) {
-                $subQuery->where('title', 'like', "%{$searchQuery}%")
-                         ->orWhereHas('author.user', function ($userQuery) use ($searchQuery) {
-                             $userQuery->where('name', 'like', "%{$searchQuery}%");
-                         });
+        // Apply search filter if provided
+        if ($request->filled('q')) {
+            $searchTerm = $request->input('q');
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('content', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('summary', 'LIKE', '%' . $searchTerm . '%');
             });
         }
 
-        // Category filtering
-        if ($request->has('category') && $request->input('category') !== 'all') {
-            $categoryName = $request->input('category');
-            $query->whereHas('categorie', function ($q) use ($categoryName) {
-                $q->where('name', $categoryName);
-            });
+        // Apply category filter if provided
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->input('category'));
         }
 
-        // Period filtering
-        if ($request->has('period') && $request->input('period') !== 'all') {
-            $period = $request->input('period');
-            switch ($period) {
-                case 'day':
-                    $query->whereDate('articles.created_at', Carbon::today());
-                    break;
-                case 'week':
-                    $query->whereBetween('articles.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-                    break;
-                case 'month':
-                    $query->whereMonth('articles.created_at', Carbon::now()->month)
-                          ->whereYear('articles.created_at', Carbon::now()->year);
-                    break;
-                case 'year':
-                    $query->whereYear('articles.created_at', Carbon::now()->year);
-                    break;
-            }
-        }
-
-        // Sorting
-        $sortOrder = $request->input('sort', 'latest'); // Default to 'latest'
-        switch ($sortOrder) {
-            case 'trending':
-                // Define "trending" score: views + (likes*2) + (comments*3)
-                // Ensure articles table is explicitly referenced for columns to avoid ambiguity if joining
-                $query->selectRaw('articles.*, (articles.view_count + (articles.like_count * 2) + (articles.comment_count * 3)) as trend_score')
-                      ->orderByDesc('trend_score');
-                break;
-            case 'likes':
-                $query->orderByDesc('articles.like_count');
-                break;
-            case 'views':
-                $query->orderByDesc('articles.view_count');
-                break;
-            case 'latest':
-            default:
-                $query->orderByDesc('articles.created_at'); // 'latest()' is an alias for this
-                break;
-        }
+        $articles = $query->latest('published_at')->paginate(8);
         
-        // If not already selected due to trending sort, select all from articles table
-        if ($sortOrder !== 'trending') {
-            $query->select('articles.*');
-        }
-
-        $articles = $query->paginate(10)->appends($request->query()); // Paginate and append query strings
-
-        return view('articles.articles', [
-            'articles' => $articles,
-        ]);
+        return view('articles.articles', compact('articles'));
     }
     
     // display the article by it's id
     public function show($article_id){
         $article = Article::select('*')
                     ->with([
-                        'author.user' => function($query) { // Correctly load user through UserProfiles
+                        'author.user' => function($query) {
                             $query->select('user_id', 'name');
                         },
-                        'categorie' // Load the category
+                        'categorie' // Make sure this is loaded
                     ])
                     ->where('status', 'published')
                     ->where('article_id', $article_id)
                     ->firstOrFail();
+        // dd($article->name);
         
         $relatedArticles = $this->relatedArticles($article->article_id, $article->author_id);
 
@@ -186,7 +135,7 @@ class ArticlesController extends Controller
             'content' => $validated['content'],
             'summary' => $validated['summary'] ?? substr(strip_tags($validated['content']), 0, 150),
             'featured_image_url' => $imagePath,
-            'category_id' => 1, // Make sure column name matches
+            'category_id' => $validated['category_id'], // ← Use the validated category_id instead of hardcoded 1
             'author_id'=> $profile->profile_id, // Use the profile_id from UserProfiles
             'status' => $validated['status'],
             'view_count' => 0,
@@ -318,9 +267,11 @@ class ArticlesController extends Controller
             Storage::disk('public')->delete($article->featured_image_url);
         }
 
+
         //Delet the artilcle
         $article->delete();
-        return redirect()->back()->with('success','Article Deleted Successfully');
+        // return redirect()->back()->with('success','Article Deleted Successfully');
+        return redirect()->route('dashboard.articles')->with('success','Article Deleted Successfully');
     }
 
     // Function to validate the article data

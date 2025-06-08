@@ -8,7 +8,8 @@
         </div>
         <div class="mt-2 me-2 ms-2 d-flex justify-content-between align-items-center">
             <span class="badge bg-secondary text-uppercase mb-2">
-                <i class="fas fa-circle me-2 small fw-bold"></i>{{$article->categorie_name}}
+                <i class="fas fa-circle me-2 small fw-bold"></i>{{$article->categorie->name}}
+                {{-- @php dd($article->categorie_name); @endphp --}}
             </span>
             <span class="text-uppercase mb-2">
                 <p class="nav-item small text-muted">{{ $article->published_at->format('M d, Y') }}</p> 

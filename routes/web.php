@@ -11,6 +11,8 @@ use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\newsletterController;
+use App\Http\Controllers\ReaderEnteractions;
+
 // test emailing route
 // Route::get('/test-email',function(){
 //     $name = "test email";
@@ -46,6 +48,12 @@ Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, '
 Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
+//follow and unfollow
+
+Route::middleware('auth')->group(function () {
+    Route::post('/follow/{profile}', [ReaderEnteractions::class, 'follow'])->name('interactions.profiles.follow');
+    Route::delete('/unfollow/{profile}', [ReaderEnteractions::class, 'unfollow'])->name('interactions.profiles.unfollow');
+});
 
 //newsletter routes
 //dashboard Routes
@@ -64,22 +72,27 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::get('./dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
     
     Route::post('/articles/{article_id}/toggle-like', [App\Http\Controllers\ArticlesController::class, 'toggleLike'])->name('articles.toggle-like');
+
 });
 
-// Follow/unfollow route - make sure this is defined exactly as shown
-Route::post('/users/{profileId}/toggle-follow', [App\Http\Controllers\UserFollowController::class, 'toggleFollow'])
-        ->name('users.toggleFollow');
-    
+
 // route to the profile page
 Route::get('/profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile');
+
 //reader profile
 Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('reader_profile');
+
+//route for the profile.show
+Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
+    ->name('profile.show')
+    ->middleware('auth')
+    ->can('accessProfile');
 
 
 

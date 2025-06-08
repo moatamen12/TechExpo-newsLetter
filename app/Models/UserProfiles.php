@@ -37,4 +37,12 @@ class UserProfiles extends Model
     {
         $profile = UserProfiles::where('user_id', $user_id)->first();
     }
+
+    /**
+     * Get followers of this user profile
+     */
+    public function followers()
+    {
+        return $this->hasMany(userFollower::class, 'following_id', 'user_id');
+    }
 }

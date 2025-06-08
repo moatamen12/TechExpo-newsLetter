@@ -5,6 +5,23 @@
     // dd('$savedArticles'); 
 @endphp
 <section class="container-fluid p-3">
+        {{-- Display Validation Errors --}}
+    @if ($errors->any())
+        <div class="row justify-content-center">
+            <div class="col-md-9"> {{-- Match the width of your main content area --}}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h4 class="alert-heading">Please fix the following errors:</h4>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="row">
         <!-- Profile Header Section (Left Column) -->
         <div class="col-md-3"> {{-- Changed from col-md-4 to col-md-3 --}}
@@ -23,6 +40,8 @@
                                             <div class="text-center mb-3"> {{-- Centered user info and added bottom margin --}}
                                                 <h2 class="mb-1" style="font-weight: 600;">HI! {{$user_name}}</h2> {{-- Adjusted margin --}}
                                                 <p class="text-muted mb-2" style="font-size: 0.9rem;">{{$user_email}}</p> {{-- Adjusted margin --}}
+                                                {{-- Add Become a Writer button  {{ route('writer.registration.form') }}--}}
+                                                <a href="#" class="btn btn-subscribe btn-sm m-3">Become a Writer</a> 
                                                 <p class="text-muted mt-1" style="font-size: 0.85rem;">Feel Free To edit Your Profile</p> {{-- Changed to <p>, adjusted style --}}
                                             </div>
                                             
@@ -101,28 +120,28 @@
                             <div class="row g-3">
                                 {{-- name --}}
                                 <div class="col-md-6">
-                                    <label for="name" class="form-label mt-2">Your Full Name<span class="text-danger">*</span></label>
+                                    <label for="name" class="form-label mt-2">Your Full Name</label>
                                     <input type="text" class="form-control form-control-sm" name="name"
                                             id="name" placeholder="Enter Your New Full Name" aria-required="true" 
-                                            value="{{ $user_name }}" required>
+                                            value="{{ $user_name }}" >
                                     <x-error_msg field="name"/>
                                 </div>
 
                                 {{-- Email --}}
                                 <div class="col-md-6">
-                                    <label for="email" class="form-label mt-2">Your Email<span class="text-danger">*</span></label>
+                                    <label for="email" class="form-label mt-2">Your Email</label>
                                     <input type="email" class="form-control form-control-sm" name="email"
                                             id="email" placeholder="Enter Your New Email" aria-required="true" 
-                                            value="{{ $user_email }}" required>
+                                            value="{{ $user_email }}" >
                                     <x-error_msg field="email"/>
                                 </div>
-
+                                <span class="text-muted mt-5">pleas enter your pasword and its confirmation when editing your profile</span>
                                 {{-- Password --}}
                                 <div class="col-md-6">
                                     <label for="password" class="form-label mt-2">Password<span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="password" class="form-control form-control-sm" id="password" 
-                                                placeholder="Enter your newPassword" aria-required="true" name="password"
+                                                placeholder="Enter your New Password" aria-required="true" name="password"
                                                 autocomplete="new-password" required>
                                         <x-visibility-toggle/>
                                     </div>
@@ -138,7 +157,7 @@
                                                 placeholder="Enter your Confirmation" aria-required="true" autocomplete="new-password" required>
                                         <x-visibility-toggle/>
                                     </div>
-                                    <footer class="text-muted">Must be at least 8 characters</footer>
+                                    {{-- <footer class="text-muted">Must be at least 8 characters</footer> --}}
                                     <x-error_msg field="Subpassword_confirmation"/>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-end">
@@ -157,44 +176,37 @@
                         <h3 class="mb-4" style="font-weight: 600; color: #333;">Writers You Follow</h3>
                         
                         @if($followedWriters && $followedWriters->count() > 0)
-                            @foreach($followedWriters as $followedRelation)
-                                @php
-                                    $writer = $followedRelation->followed; 
-                                @endphp
-                                @if($writer)
-                                <div class="position-relative">
-                                    <div class="d-flex align-items-center py-3 border-bottom" style="border-color: #f1f1f1 !important;">
-                                        <div class="me-3">
-                                            {{-- Pass the User model of the writer to the avatar component --}}
-                                            <x-user_avatar :user="$writer" /> 
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <a href="#" class="stretched-link fw-bold display-7 me-2 text-decoration-none">{{ $writer->name ?? 'Writer Name Unavailable' }}</a><br>
-                                            {{-- <small class="text-muted">Following since N/A</small>  --}}
-                                        </div>
-                                    </div>
-                                    <div class="position-absolute" style="top: 50%; right: 15px; transform: translateY(-50%); z-index: 10;">
-                                        <div class="d-flex align-items-center">
-                                            {{-- <div class="me-3 text-end">
-                                                <span class="d-block text-muted" style="font-size: 14px;">
-                                                    {{ $writer->userProfile->num_articles ?? 0 }} articles
-                                                </span>
-                                                Newsletter count is not directly available, using placeholder
-                                                <span class="d-block text-muted" style="font-size: 12px;">N/A newsletters</span>
-                                            </div> --}}
-                                            {{-- Replace {{ route('writers.unfollow', $writer->user_id) }} with the actual unfollow route --}}
-                                            <form action="#" method="POST" style="display: inline;">
-                                                @csrf
-                                                @method('DELETE') {{-- Or POST, depending on your route definition --}}
-                                                <button type="submit" class="btn secondary-btn btn-sm px-3" style="border-radius: 20px; font-weight: 500;">Unfollow</button>
-                                            </form>
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                                @foreach($followedWriters as $followedRelation)
+                                    @php
+                                        $writer = $followedRelation->following;
+                                    @endphp
+                                    @if($writer && $writer->user)
+                                    <div class="col">
+                                        <div class="card h-100 text-center shadow-sm">
+                                            <div class="card-body d-flex flex-column align-items-center">
+                                                <div class="mb-3">
+                                                    <x-user_avatar :user="$writer->user" size="80" /> 
+                                                </div>
+                                                <h5 class="card-title mb-1">
+                                                    <a href="{{route('profile.show',$writer->profile_id)}}" class="text-decoration-none stretched-link">{{ $writer->user->name ?? 'Writer Name Unavailable' }}</a>
+                                                </h5>
+                                                <div class="mt-auto"> {{-- Pushes button to the bottom if card heights vary --}}
+                                                    {{-- Replace # with the actual unfollow route and $writer->user->user_id or $writer->profile_id as needed --}}
+                                                    <form action="#" method="POST" class="mt-2" style="position: relative; z-index: 2;">
+                                                        @csrf
+                                                        @method('DELETE') {{-- Or POST, depending on your route definition --}}
+                                                        <button type="submit" class="btn secondary-btn btn-sm px-3" style="border-radius: 20px; font-weight: 500;">Unfollow</button>
+                                                    </form>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                @endif
-                            @endforeach
+                                    @endif
+                                @endforeach
+                            </div>
                         @else
-                            <p>You are not following any writers yet.</p>
+                            <p class="text-center">You are not following any writers yet.</p>
                         @endif
                     </div>
                 </div>
@@ -249,4 +261,5 @@
         </div>
     </div>
 </section>
+<script src="{{ asset('assets/js/visability.js') }}"></script>
 @endsection

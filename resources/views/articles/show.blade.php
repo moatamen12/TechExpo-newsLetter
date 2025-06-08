@@ -5,7 +5,7 @@
     <div class="px-lg-5 mx-5">
         {{-- the article title --}}
         <div class="pb-2" id="title">
-            <span class="badge mb-2 text-start cata-bg fw-bold">{{$article->categorie_name}}</span>
+            <span class="badge mb-2 text-start cata-bg fw-bold">{{ $article->categorie->name ?? 'Uncategorized' }}</span>
             <h1 class="text-start my-2 fw-bold">{{$article->title}}</h1>
             {{-- <h1 > {{$article->title}}</h1> --}}
             <div class="d-flex flex-row mt-3">
@@ -28,57 +28,88 @@
         {{-- the auther info  --}}
         <div class="border-bottom border-top border-2 pb-2">
             <div class="d-flex align-items-center justify-content-between my-3">
-                <div class="d-flex align-items-center">
-                    <div>
-                        @include('components.user_avatar', ['user' => $article->author])
-                    </div>
-                    <div class="d-flex flex-column">
-                        <span class="fw-bold display-block mb-2">{{ $article->author->user->name }}</span>
-                        <span class="text-muted">{{ $article->UserProfiles->work ?? 'No bio available' }}</span>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center">
-                    @auth
-                        @if(Auth::id() != $article->author->user_id)
-                            @php
-                                $isFollowing = \App\Models\userFollower::where('follower_id', Auth::id())
-                                    ->where('following_id', $article->author->profile_id)
-                                    ->exists();
-                            @endphp
-                            <button class="btn btn-outline-secondary rounded-pill secondary-btn me-2 follow-button" 
-                                    data-user-id="{{ $article->author->profile_id }}"
-                                    data-following="{{ $isFollowing ? 'true' : 'false' }}">
-                                {{ $isFollowing ? 'Following' : 'Follow' }}
-                            </button>
-                        @endif
+                @auth
+                    @if(Auth::id() == $article->author->user_id)
+                        {{-- Buttons for the article author --}}
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <x-user_avatar :user="$article->author->user" class="me-3" />
+                            </div>
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold z-3 display-block mb-1">{{ $article->author->user->name }}</span>
+                                <span class="text-muted small">You are the author of this article.</span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <a href="{{ route('articles.edit', $article->article_id) }}" class="btn secondary-btn btn-sm me-2 rounded-pill">
+                                <i class="fas fa-edit me-1"></i> Edit
+                            </a>
+                            <form action="{{ route('articles.destroy', $article->article_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this article?');" class="me-2">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill">
+                                    <i class="fas fa-trash me-1"></i> Delete
+                                </button>
+                            </form>
+                            {{-- Add your "Send as Newsletter" button/form here --}}
+                            {{-- Example:{{ route('articles.sendNewsletter', $article->article_id) }} --}}
+                            <form action="#" method="POST" onsubmit="return confirm('Are you sure you want to send this article as a newsletter?');">
+                                @csrf
+                                <button type="submit" class="btn btn-subscribe-outline   btn-sm rounded-pill">
+                                    <i class="fas fa-paper-plane me-1"></i> Send as Newsletter
+                                </button>
+                            </form>
+                        </div>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-pill secondary-btn me-2">
+                        {{-- Standard author info and interaction buttons for other logged-in users --}}
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <x-user_avatar :user="$article->author->user" class="me-3" />
+                            </div>
+                            <div class="d-flex flex-column">
+                                <a href="{{route('profile.show',$article->author->profile_id)}}" class="fw-bold z-3 display-block mb-2">{{ $article->author->user->name }}</a>
+                                <span class="text-muted overlay-hide" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 2em; line-height: 1.8em; max-width: 250px;">{{ $article->author->bio ?? 'No bio available' }}</span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            @php
+                                $isFollowing = Auth::user()->isFollowing($article->author);
+                            @endphp
+                            <button type="button" class="btn {{ $isFollowing ? 'secondary-btn' : 'btn-outline-secondary' }} rounded-pill me-2 js-follow-button"
+                                    data-profile-id="{{ $article->author->profile_id }}"
+                                    data-is-following="{{ $isFollowing ? 'true' : 'false' }}"
+                                    data-follow-url="{{ route('interactions.profiles.follow', $article->author->profile_id) }}"
+                                    data-unfollow-url="{{ route('interactions.profiles.unfollow', $article->author->profile_id) }}">
+                                {{ $isFollowing ? 'Unfollow' : 'Follow' }}
+                            </button>
+                        </div>
+                    @endif
+                @else
+                    {{-- Author info for guests --}}
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <x-user_avatar :user="$article->author->user" class="me-3" />
+                        </div>
+                        <div class="d-flex flex-column">
+                            <a href="{{route('profile.show',$article->author->profile_id)}}" class="fw-bold z-3 display-block mb-2">{{ $article->author->user->name }}</a>
+                            <span class="text-muted overlay-hide" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; max-height: 2em; line-height: 1.8em; max-width: 250px;">{{ $article->author->bio ?? 'No bio available' }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-pill me-2">
                             Follow
                         </a>
-                    @endauth
-                    <div class="d-flex flex-column align-items-center">
-                        {{-- Add data-article-id and check if liked by current user --}}
-                        @php
-                            $isLikedByCurrentUser = $article->isLikedByCurrentUser();
-                        @endphp
-                        @auth
-                            <div id="likeButton" class="border-start p-2 border-2 border-black" 
-                                 data-article-id="{{ $article->article_id }}" 
-                                 style="cursor: pointer;"
-                                 data-liked="{{ $isLikedByCurrentUser ? 'true' : 'false' }}">
-
-                                <i class="like-icon {{ $isLikedByCurrentUser ? 'fa-solid fa-heart' : 'fa-regular fa-heart' }}" style="color: #ff8787;"></i>
-                                <span class="like-count small text-muted">{{ $article->like_count ?? 0 }}</span>
-                            </div>
-                        @else
+                        <div class="d-flex flex-row align-items-center">
                             <div class="border-start p-2 border-2 border-black">
                                 <i class="fa-regular fa-heart" style="color: #ff8787;"></i>
                                 <span class="like-count small text-muted">{{ $article->like_count ?? 0 }}</span>
                             </div>
-                        @endauth
+                            <a href="{{ route('login') }}" class="p-2" title="Login to save">
+                                <i class="fa-regular fa-bookmark" style="color: #0d6efd;"></i>
+                            </a>
+                        </div>
                     </div>
-                </div>
-
+                @endauth
             </div>  
         </div>
 
@@ -233,7 +264,7 @@
         <x-headers               
             title="Related Articles"
             description="More Articles From {{ $article->author->user->name ?? 'this author' }}"
-            :url="route('articles', ['q' => $article->author->user->name ?? $article->categorie_name])" />
+            :url="route('articles', ['q' => $article->author->user->name ?? $article->categorie->name ?? ''])" />
     </div>
     <div class="row row-cols-sm-1 row-cols-lg-3 row-cols-md-2 g-4 m-4">
         @forEach($relatedArticles as $relatedArticle)
@@ -251,109 +282,5 @@
             form.style.display = "none";
         }
     }
-
-    // Like button functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const likeButton = document.getElementById('likeButton');
-        
-        if (likeButton) {
-            likeButton.addEventListener('click', function() {
-                const articleId = this.getAttribute('data-article-id');
-                const likeIcon = this.querySelector('.like-icon');
-                const likeCount = this.querySelector('.like-count');
-                
-                // Disable button temporarily to prevent double clicks
-                this.style.pointerEvents = 'none';
-                
-                fetch(`/articles/${articleId}/toggle-like`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    
-                    // Update the like count
-                    likeCount.textContent = data.like_count;
-                    
-                    // Update the heart icon and data attribute
-                    if (data.liked) {
-                        likeIcon.className = 'like-icon fa-solid fa-heart';
-                        this.setAttribute('data-liked', 'true');
-                    } else {
-                        likeIcon.className = 'like-icon fa-regular fa-heart';
-                        this.setAttribute('data-liked', 'false');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                })
-                .finally(() => {
-                    // Re-enable button
-                    this.style.pointerEvents = 'auto';
-                });
-            });
-        }
-
-        // Follow button functionality
-        const followButton = document.querySelector('.follow-button');
-        
-        if (followButton) {
-            followButton.addEventListener('click', function() {
-                const userId = this.getAttribute('data-user-id');
-                
-                // Disable button temporarily to prevent double clicks
-                this.style.pointerEvents = 'none';
-                
-                fetch(`/users/${userId}/toggle-follow`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({})
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    
-                    // Update the button text and class
-                    if (data.followed) {
-                        this.textContent = 'Following';
-                        this.classList.add('following');
-                        this.setAttribute('data-following', 'true');
-                    } else {
-                        this.textContent = 'Follow';
-                        this.classList.remove('following');
-                        this.setAttribute('data-following', 'false');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                })
-                .finally(() => {
-                    // Re-enable button
-                    this.style.pointerEvents = 'auto';
-                });
-            });
-        }
-    });
 </script>
 @endpush

@@ -84,27 +84,25 @@ class User extends Authenticatable
      */
     public function following()
     {
-        return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'followed_id');
-        // Remove withTimestamps() since your table only has created_at
-    }
+        return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'following_id');
 
-    /**
-     * The users who follow this user (followers/readers).
-     */
-    public function followers()
-    {
-        return $this->belongsToMany(User::class, 'user_followers', 'followed_id', 'follower_id'); 
-        // Remove withTimestamps() here as well
     }
 
     /**
      * Check if the current user is following another user.
      */
-    public function isFollowing($userId)
+    public function isFollowing($profile)
     {
-        return $this->following()
-                    ->where('user_followers.followed_id', $userId)
-                    ->exists();
+        // If it's a UserProfile object, get the profile_id
+        if (is_object($profile) && isset($profile->profile_id)) {
+            $profileId = $profile->profile_id;
+        } else {
+            $profileId = $profile;
+        }
+        
+        return \App\Models\userFollower::where('follower_id', $this->user_id)
+                           ->where('following_id', $profileId)
+                           ->exists();
     }
 
     /**
