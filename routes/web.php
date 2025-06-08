@@ -10,13 +10,15 @@ use App\Http\Controllers\ProfilesController;
 use App\Http\Controllers\SubscribeController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CommentController;
-
+use App\Http\Controllers\newsletterController;
 // test emailing route
-Route::get('/test-email',function(){
-    $name = "test email";
-    Mail::to('motx98990@gmail.com')->send(new \App\Mail\NewsletterEmail($name));
+// Route::get('/test-email',function(){
+//     $name = "test email";
+//     Mail::to('motx98990@gmail.com')->send(new \App\Mail\NewsletterEmail($name));
 
-});
+// });
+
+
 
 
 //rout to the subscribe
@@ -45,32 +47,42 @@ Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
 
+//newsletter routes
+//dashboard Routes
+Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
+    Route::get('/dashboard',[DashboardController::class ,'index'])->name('dashboard');
+    Route::get('/dashboard/articles',[DashboardController::class ,'articles'])->name('dashboard.articles');
 
+    Route::get('/dashboard/articles/create', [ArticlesController::class, 'create'])->name('articles.create');// createing and acrticle 
+    Route::post('/dashboard/articles', [ArticlesController::class, 'store'])->name('articles.store');// storing the article 
+    Route::post('/dashboard/upload-image', [ArticlesController::class, 'uploadImage'])->name('articles.upload-image');// uploading the images
 
+    Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit'])->name('articles.edit');//editing an article 
+    Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update'])->name('articles.update');// save the edite
+    Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy'])->name('articles.destroy');//deleting an article 
+    
+    Route::get('./dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
+    
+    Route::post('/articles/{article_id}/toggle-like', [App\Http\Controllers\ArticlesController::class, 'toggleLike'])->name('articles.toggle-like');
+});
 
-
+// Follow/unfollow route - make sure this is defined exactly as shown
+Route::post('/users/{profileId}/toggle-follow', [App\Http\Controllers\UserFollowController::class, 'toggleFollow'])
+        ->name('users.toggleFollow');
+    
 // route to the profile page
 Route::get('/profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile');
-// //reader profile
+//reader profile
 Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('reader_profile');
 
 
-Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
-    Route::get('/dashboard',[DashboardController::class ,'index'])->name('dashboard');
-    Route::get('/dashboard/articles',[DashboardController::class ,'articles'])->name('dashboard.articles');
-    Route::get('/dashboard/articles/create', [ArticlesController::class, 'create'])->name('articles.create');
-    Route::post('/dashboard/articles', [ArticlesController::class, 'store'])->name('articles.store');
-    Route::post('/dashboard/upload-image', [ArticlesController::class, 'uploadImage'])->name('articles.upload-image');
-    Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit'])->name('articles.edit');
-    Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update'])->name('articles.update');
-    Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy'])->name('articles.destroy');
-});
+
 
 // //edit an article 
 // Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit']) //editing an article 

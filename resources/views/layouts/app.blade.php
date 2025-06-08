@@ -4,6 +4,8 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
         <title>@hasSection('title')@yield('title') - Tech Expo @else Tech Expo @endif</title>
 
         <script src="https://kit.fontawesome.com/fc7e8d802d.js" crossorigin="anonymous"></script>  {{-- Font Awesome icons --}}

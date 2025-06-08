@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Article;
 use App\Models\Comment;
+use Illuminate\Support\Facades\Auth;
 
 class UserProfiles extends Model
 {
@@ -20,7 +21,6 @@ class UserProfiles extends Model
     //relation with the user model (one to one)
     public function user(){
         return $this->belongsTo(User::class , 'user_id','user_id');
-                    // ->where('role','author');
     }
 
     //relation with the articles model (one to many)
@@ -36,7 +36,5 @@ class UserProfiles extends Model
     public function get_profile_info($user_id)
     {
         $profile = UserProfiles::where('user_id', $user_id)->first();
-        // dd($profile);
-
     }
 }

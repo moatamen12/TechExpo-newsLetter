@@ -56,7 +56,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
         <x-taps :taps="$dashboardTabs" :activeTab="$activeTab" />
         {{-- search --}}
-        <div class="w-50 d-flex justify-content-end">
+        <div class="w-50 d-flex justify-content-end login-bg rounded-5">
             <x-sub_header/>
         </div>
     </div>  

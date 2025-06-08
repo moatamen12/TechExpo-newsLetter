@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class Article extends Model
 {
@@ -35,6 +36,13 @@ class Article extends Model
     {
         return $this->belongsTo(UserProfiles::class, 'author_id', 'profile_id');
     }
+
+    // CORRECT relationship - Article has many ArticleLikes
+    public function likes()
+    {
+        return $this->hasMany(ArticleLike::class, 'article_id', 'article_id');
+    }
+
     /**
      * Get the author's name
      * 
@@ -56,6 +64,7 @@ class Article extends Model
     {
         return $this->hasMany(Comment::class,'article_id','article_id');
     }
+
     /**
      * Get the catagorie's name
      * 
@@ -65,7 +74,6 @@ class Article extends Model
     {
         return $this->categorie ? $this->categorie->name : 'Unknown Categorie';
     }
-
 
     /**
      * Get the comments 
@@ -77,8 +85,6 @@ class Article extends Model
         return $this->comment ? $this->comment->count() : 0;
     }
 
-
-
     // trinding articles
     public function scopeTrendingArticles($query, $days = 7, $limit = 5){
         $date = Carbon::now()->subDays($days);
@@ -87,9 +93,7 @@ class Article extends Model
             ->where('status', 'published')
             ->where('created_at', '>=', $date)
             ->select('articles.*')
-
             ->selectRaw('(view_count * 1 + like_count * 2 + comment_count * 3) as trend_score')
-
             ->orderByDesc('trend_score')
             ->limit($limit);
     }
@@ -102,7 +106,6 @@ class Article extends Model
                      ->orderBy('created_at','desc')
                      ->take($limit);
     }
-
 
     // get the must views articles
     public function scopeMosViewsArticles($query,$limit = 5){
@@ -131,6 +134,18 @@ class Article extends Model
                      ->take($limit);
     }
 
+    /**
+     * Check if the article is liked by the current authenticated user.
+     *
+     * @return bool
+     */
+    public function isLikedByCurrentUser()
+    {
+        if (!Auth::check()) {
+            return false; // No user is authenticated
+        }
 
-
+        // Check if there's a like record for this article and current user
+        return $this->likes()->where('user_id', Auth::id())->exists();
+    }
 }

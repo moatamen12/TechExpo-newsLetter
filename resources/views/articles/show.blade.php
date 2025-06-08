@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', $article->title)
 @section('content')
-
 <section class="container-flued p-lg-5 mx-lg-5 d-flex flex-column justify-content-center align-items-center">
     <div class="px-lg-5 mx-5">
         {{-- the article title --}}
@@ -39,12 +38,44 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center">
-                    <button class="btn btn-outline-secondary rounded-pill secondary-btn me-2"> Follow </button>
+                    @auth
+                        @if(Auth::id() != $article->author->user_id)
+                            @php
+                                $isFollowing = \App\Models\userFollower::where('follower_id', Auth::id())
+                                    ->where('following_id', $article->author->profile_id)
+                                    ->exists();
+                            @endphp
+                            <button class="btn btn-outline-secondary rounded-pill secondary-btn me-2 follow-button" 
+                                    data-user-id="{{ $article->author->profile_id }}"
+                                    data-following="{{ $isFollowing ? 'true' : 'false' }}">
+                                {{ $isFollowing ? 'Following' : 'Follow' }}
+                            </button>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-outline-secondary rounded-pill secondary-btn me-2">
+                            Follow
+                        </a>
+                    @endauth
                     <div class="d-flex flex-column align-items-center">
-                        <div id="likeButton" class="border-start p-2 border-2 border-black">
-                            <i class="fa-regular fa-heart like-icon" style="color: #ff8787; cursor: pointer;"></i>
-                            <span class="like-count small text-muted">{{ $article->likes_count ?? 0 }}</span>
-                        </div>
+                        {{-- Add data-article-id and check if liked by current user --}}
+                        @php
+                            $isLikedByCurrentUser = $article->isLikedByCurrentUser();
+                        @endphp
+                        @auth
+                            <div id="likeButton" class="border-start p-2 border-2 border-black" 
+                                 data-article-id="{{ $article->article_id }}" 
+                                 style="cursor: pointer;"
+                                 data-liked="{{ $isLikedByCurrentUser ? 'true' : 'false' }}">
+
+                                <i class="like-icon {{ $isLikedByCurrentUser ? 'fa-solid fa-heart' : 'fa-regular fa-heart' }}" style="color: #ff8787;"></i>
+                                <span class="like-count small text-muted">{{ $article->like_count ?? 0 }}</span>
+                            </div>
+                        @else
+                            <div class="border-start p-2 border-2 border-black">
+                                <i class="fa-regular fa-heart" style="color: #ff8787;"></i>
+                                <span class="like-count small text-muted">{{ $article->like_count ?? 0 }}</span>
+                            </div>
+                        @endauth
                     </div>
                 </div>
 
@@ -220,6 +251,109 @@
             form.style.display = "none";
         }
     }
+
+    // Like button functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const likeButton = document.getElementById('likeButton');
+        
+        if (likeButton) {
+            likeButton.addEventListener('click', function() {
+                const articleId = this.getAttribute('data-article-id');
+                const likeIcon = this.querySelector('.like-icon');
+                const likeCount = this.querySelector('.like-count');
+                
+                // Disable button temporarily to prevent double clicks
+                this.style.pointerEvents = 'none';
+                
+                fetch(`/articles/${articleId}/toggle-like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Update the like count
+                    likeCount.textContent = data.like_count;
+                    
+                    // Update the heart icon and data attribute
+                    if (data.liked) {
+                        likeIcon.className = 'like-icon fa-solid fa-heart';
+                        this.setAttribute('data-liked', 'true');
+                    } else {
+                        likeIcon.className = 'like-icon fa-regular fa-heart';
+                        this.setAttribute('data-liked', 'false');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                })
+                .finally(() => {
+                    // Re-enable button
+                    this.style.pointerEvents = 'auto';
+                });
+            });
+        }
+
+        // Follow button functionality
+        const followButton = document.querySelector('.follow-button');
+        
+        if (followButton) {
+            followButton.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                
+                // Disable button temporarily to prevent double clicks
+                this.style.pointerEvents = 'none';
+                
+                fetch(`/users/${userId}/toggle-follow`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Update the button text and class
+                    if (data.followed) {
+                        this.textContent = 'Following';
+                        this.classList.add('following');
+                        this.setAttribute('data-following', 'true');
+                    } else {
+                        this.textContent = 'Follow';
+                        this.classList.remove('following');
+                        this.setAttribute('data-following', 'false');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                })
+                .finally(() => {
+                    // Re-enable button
+                    this.style.pointerEvents = 'auto';
+                });
+            });
+        }
+    });
 </script>
-    
 @endpush

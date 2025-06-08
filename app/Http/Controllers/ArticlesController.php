@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Comment;
-use App\Models\User;
+use App\Models\ArticleLike;
 use App\Models\UserProfiles;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +13,7 @@ use Carbon\Carbon; // Import Carbon for date handling
 use Illuminate\Support\Facades\Mail; // Import Mail facade
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+
 
 class ArticlesController extends Controller
 {
@@ -194,7 +195,6 @@ class ArticlesController extends Controller
             // 'creater_at' => ($validated['status'] === 'draft') ? now() : null,
             'published_at' => ($validated['status'] === 'published') ? now() : null,   
         ]);
-        // up the count of the authors articles count   
 
         // Redirect with success message
         $message = ($validated['status'] === 'published') ? 'Article published successfully!' : 'Article saved as draft successfully!';
@@ -376,4 +376,40 @@ class ArticlesController extends Controller
 
         return  $relatedArticles ;
     }
+
+public function toggleLike(Request $request, $article_id)
+{
+    // Check if user is authenticated
+    if (!Auth::check()) {
+        return response()->json(['error' => 'User must be logged in'], 401);
+    }
+    
+    $user_id = Auth::id();
+    $article = Article::findOrFail($article_id);
+    
+    // Check if user already liked this article
+    $existingLike = ArticleLike::where('user_id', $user_id)
+                              ->where('article_id', $article_id)
+                              ->first();
+    
+    if ($existingLike) {
+        // User already liked the article, so unlike it
+        $existingLike->delete();
+        $article->decrement('like_count');
+        $liked = false;
+    } else {
+        // User hasn't liked the article, so add a like
+        ArticleLike::create([
+            'user_id' => $user_id,
+            'article_id' => $article_id
+        ]);
+        $article->increment('like_count');
+        $liked = true;
+    }
+    
+    return response()->json([
+        'liked' => $liked,
+        'like_count' => $article->like_count
+    ]);
+}
 }

@@ -29,7 +29,7 @@
                                 <a class="btn btn-subscribe btn-lg px-4 py-3 rounded-pill Zbtn shadow-lg" href="{{route('dashboard')}}">
                                     Manage Your Content
                                 </a>
-                                <a class="btn btn-subscribe-outline btn-lg px-4 py-3 rounded-pill Zbtn shadow-lg" style="color:#e2ebf4 !important" href="{{route('author_profile')}}">
+                                <a class="btn btn-subscribe-outline btn-lg px-4 py-3 rounded-pill Zbtn shadow-lg" style="color:#e2ebf4 !important" href="#">{{--{{route('author_profile')}}--}}
                                     <i class="fa-regular fa-user"></i> Profile Settings
                                 </a>
                             </div>

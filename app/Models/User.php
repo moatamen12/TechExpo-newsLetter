@@ -67,6 +67,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class, 'user_id', 'user_id');
     }
+    
+    public function articleLikes()
+    {
+        return $this->hasMany(ArticleLike::class);
+    }
 
     //relation with the userSavedArticle model "relation one to many"
     public function userSavedArticle()
@@ -75,12 +80,51 @@ class User extends Authenticatable
     }
 
     /**
-     * The users that this user is following.
+     * The users that this user is following (writers).
      */
     public function following()
     {
-        return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'followed_id')
-                    ->with('userProfile'); // Eager load user profiles for display
+        return $this->belongsToMany(User::class, 'user_followers', 'follower_id', 'followed_id');
+        // Remove withTimestamps() since your table only has created_at
+    }
+
+    /**
+     * The users who follow this user (followers/readers).
+     */
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'user_followers', 'followed_id', 'follower_id'); 
+        // Remove withTimestamps() here as well
+    }
+
+    /**
+     * Check if the current user is following another user.
+     */
+    public function isFollowing($userId)
+    {
+        return $this->following()
+                    ->where('user_followers.followed_id', $userId)
+                    ->exists();
+    }
+
+    /**
+     * Follow a user.
+     */
+    public function follow($userId)
+    {
+        if (!$this->isFollowing($userId)) {
+            $this->following()->attach($userId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Unfollow a user.
+     */
+    public function unfollow($userId)
+    {
+        return $this->following()->detach($userId);
     }
 
 

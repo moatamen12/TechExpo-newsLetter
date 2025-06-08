@@ -20,7 +20,6 @@ class ProfilesController extends Controller
         if (!$user) {
             return redirect()->route('login')->with('error', 'You must be logged in to view this page.');
         }
-
         // Simplified logic: always show readerProfile for now, 
         // you can add author-specific logic later if needed.
         return  $this->readerProfile($user);
