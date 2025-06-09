@@ -21,6 +21,17 @@
             </div>
         </div>
     @endif
+    {{-- Display Success Message --}}
+    @if (session('success'))
+        <div class="row justify-content-center">
+            <div class="col-md-9"> {{-- Match the width of your main content area --}}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="row">
         <!-- Profile Header Section (Left Column) -->
@@ -115,7 +126,7 @@
                 <div class="tab-pane fade show active" id="edit-profile" role="tabpanel" aria-labelledby="edit-profile-tab">
                     <h3 class="p-3">Edit Profile</h3>
                     <div class="container mt-4 mb-4"> {{-- Removed d-flex, align-items-center, justify-content-center --}}
-                        <form action="#" method="#" class="w-100">
+                        <form action="{{ route('profile.update') }}" method="POST" class="w-100">
                             @csrf
                             <div class="row g-3">
                                 {{-- name --}}
@@ -135,32 +146,57 @@
                                             value="{{ $user_email }}" >
                                     <x-error_msg field="email"/>
                                 </div>
-                                <span class="text-muted mt-5">pleas enter your pasword and its confirmation when editing your profile</span>
-                                {{-- Password --}}
-                                <div class="col-md-6">
-                                    <label for="password" class="form-label mt-2">Password<span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control form-control-sm" id="password" 
-                                                placeholder="Enter your New Password" aria-required="true" name="password"
-                                                autocomplete="new-password" required>
-                                        <x-visibility-toggle/>
-                                    </div>
-                                    <footer class="text-muted">Must be at least 8 characters</footer>
-                                    <x-error_msg field="password"/>
+
+                                {{-- Button to toggle password change fields using Bootstrap Collapse --}}
+                                <div class="col-12 mt-4">
+                                    <button type="button" class="btn secondary-btn btn-sm" data-bs-toggle="collapse" data-bs-target="#passwordChangeSection" aria-expanded="false" aria-controls="passwordChangeSection">
+                                        Change Password
+                                    </button>
                                 </div>
-                        
-                                <!-- confirm password -->
-                                <div class="col-md-6">
-                                    <label for="Subpassword_confirmation" class="form-label mt-2">Confirm Password<span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control form-control-sm" id="Subpassword_confirmation" name="Subpassword_confirmation" 
-                                                placeholder="Enter your Confirmation" aria-required="true" autocomplete="new-password" required>
-                                        <x-visibility-toggle/>
+
+                                {{-- Collapsible password change section --}}
+                                <div class="collapse row g-3 mt-2" id="passwordChangeSection">
+                                    <span class="text-muted col-12">Please enter your current password to set a new one.</span>
+                                    {{-- Old Password --}}
+                                    <div class="col-md-6">
+                                        <label for="old_password" class="form-label mt-2">Old Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control form-control-sm" id="old_password"
+                                                   placeholder="Enter your Old Password" name="old_password"
+                                                   autocomplete="current-password">
+                                            <x-visibility-toggle target="old_password"/>
+                                        </div>
+                                        <x-error_msg field="old_password"/>
                                     </div>
-                                    {{-- <footer class="text-muted">Must be at least 8 characters</footer> --}}
-                                    <x-error_msg field="Subpassword_confirmation"/>
+                                    <div class="col-md-6"></div> {{-- Spacer column --}}
+
+                                    {{-- New Password --}}
+                                    <div class="col-md-6">
+                                        <label for="new_password" class="form-label mt-2">New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control form-control-sm" id="new_password" 
+                                                    placeholder="Enter your New Password" name="new_password"
+                                                    autocomplete="new-password">
+                                            <x-visibility-toggle target="new_password"/>
+                                        </div>
+                                        <footer class="text-muted">Must be at least 8 characters have at least 1 letter and 1 cpechila latter</footer>
+                                        <x-error_msg field="new_password"/>
+                                    </div>
+                            
+                                    <!-- Confirm New password -->
+                                    <div class="col-md-6">
+                                        <label for="new_password_confirmation" class="form-label mt-2">Confirm New Password</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control form-control-sm" id="new_password_confirmation" name="new_password_confirmation" 
+                                                    placeholder="Confirm your New Password" autocomplete="new-password">
+                                            <x-visibility-toggle target="new_password_confirmation"/>
+                                        </div>
+                                        <x-error_msg field="new_password_confirmation"/>
+                                    </div>
                                 </div>
-                                <div class="d-flex align-items-center justify-content-end">
+                                {{-- End of collapsible password change section --}}
+
+                                <div class="d-flex align-items-center justify-content-end col-12"> {{-- Ensure button is full width of this row --}}
                                     <div class="mt-3">
                                         <button type="submit" class="btn btn-subscribe btn-sm w-100">Update Profile</button>
                                     </div>
@@ -268,4 +304,56 @@
     </div>
 </section>
 <script src="{{ asset('assets/js/visability.js') }}"></script>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const passwordChangeSection = document.getElementById('passwordChangeSection');
+        const oldPasswordInput = document.getElementById('old_password');
+        const newPasswordInput = document.getElementById('new_password');
+        const newPasswordConfirmationInput = document.getElementById('new_password_confirmation');
+
+        // If there are password validation errors on page load, show the password section
+        let hasPasswordError = false;
+        @if($errors->has('old_password') || $errors->has('new_password') || $errors->has('new_password_confirmation'))
+            hasPasswordError = true;
+        @endif
+
+        if (hasPasswordError && passwordChangeSection) {
+            // Use Bootstrap's API to show the collapse element
+            var collapseElement = new bootstrap.Collapse(passwordChangeSection, {
+                toggle: false // Prevent toggling, just ensure it's shown
+            });
+            collapseElement.show();
+        }
+
+        // Optional: Manage 'required' attribute based on collapse state
+        // This is useful if your backend validation for password fields is conditional
+        if (passwordChangeSection) {
+            passwordChangeSection.addEventListener('show.bs.collapse', function () {
+                oldPasswordInput.setAttribute('required', 'required');
+                newPasswordInput.setAttribute('required', 'required');
+                newPasswordConfirmationInput.setAttribute('required', 'required');
+            });
+
+            passwordChangeSection.addEventListener('hide.bs.collapse', function () {
+                oldPasswordInput.removeAttribute('required');
+                newPasswordInput.removeAttribute('required');
+                newPasswordConfirmationInput.removeAttribute('required');
+                // Optionally clear the fields when hiding
+                // oldPasswordInput.value = '';
+                // newPasswordInput.value = '';
+                // newPasswordConfirmationInput.value = '';
+            });
+
+            // Initial check for required attributes if the section is already visible (e.g. due to error)
+            if (passwordChangeSection.classList.contains('show')) {
+                oldPasswordInput.setAttribute('required', 'required');
+                newPasswordInput.setAttribute('required', 'required');
+                newPasswordConfirmationInput.setAttribute('required', 'required');
+            }
+        }
+    });
+</script>
+@endpush
 @endsection

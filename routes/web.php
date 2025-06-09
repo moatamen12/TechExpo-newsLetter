@@ -101,6 +101,13 @@ Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
                       ->can('accessProfile') 
                       ->name('reader_profile');
 
+//edit reader profile 
+Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
+                      ->middleware('auth')  
+                      ->can('accessProfile') 
+                      ->name('profile.update');
+
+
 //route for the profile.show
 Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
     ->name('profile.show')

@@ -9,6 +9,9 @@ use App\Models\Article;
 use App\Models\userFollower; // Corrected model name
 use App\Models\UserProfiles;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 
 class ProfilesController extends Controller
@@ -93,9 +96,54 @@ class ProfilesController extends Controller
         ]);
     }
 
+    public function updateReaderProfile(Request $request)
+    {
+        $user = Auth::user();
 
-    // public function edit_reder(Request $request)
-    // {   
-        
-    // }
+        // Base validation rules
+        $rules = [
+            'name' => ['required', 'string', 'min:5','max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->user_id, 'user_id'), // Ignore current user's email
+            ],
+            'old_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', Password::min(8)->sometimes(), 'confirmed'],
+            // new_password_confirmation is handled by 'confirmed' rule on new_password
+        ];
+
+        // Custom validation messages
+        $messages = [
+            'new_password.confirmed' => 'The new password confirmation does not match.',
+            'new_password.min' => 'The new password must be at least 8 characters.',
+            'old_password.current_password' => 'The provided old password does not match your current password.',
+        ];
+
+        // Conditionally add password validation if old_password is provided
+        if ($request->filled('old_password') || $request->filled('new_password')) {
+            $rules['old_password'] = ['required', 'string', 'current_password']; // Uses Laravel's built-in current_password rule
+            $rules['new_password'] = ['required', 'string', Password::min(8), 'confirmed'];
+        }
+
+        $validatedData = $request->validate($rules, $messages);
+
+        // Update name and email
+        $user->name = $validatedData['name'];
+        $user->email = $validatedData['email'];
+
+        // Update password if new_password is provided and old_password was correct
+        if ($request->filled('new_password') && $request->filled('old_password')) {
+            // The 'current_password' rule already validated the old_password.
+            // If validation passes, we can safely update.
+            $user->password = Hash::make($validatedData['new_password']);
+        }
+
+        $user->save();
+
+        return redirect()->route('profile')->with('success', 'Profile updated successfully!');
+    }
+
 }

@@ -38,6 +38,7 @@ class UserProfiles extends Model
         $profile = UserProfiles::where('user_id', $user_id)->first();
     }
 
+    
     /**
      * Get followers of this user profile
      */

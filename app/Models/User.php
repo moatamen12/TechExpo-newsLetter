@@ -27,6 +27,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -57,6 +58,37 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserProfiles::class, 'user_id', 'user_id');
     }
+
+    
+    /**
+     * Scope a query to only include users who are writers (authors or admins).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array|string $writerRoles The role(s) that identify a writer. Defaults to 'author'.
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeIsWriter($query, $writerRoles = 'author')
+    {
+        if (is_array($writerRoles)) {
+            return $query->whereIn('role', $writerRoles);
+        }
+        return $query->where('role', $writerRoles);
+    }
+
+    /**
+     * Check if the user is a writer (author or admin) (instance method).
+     *
+     * @param  array|string $writerRoles
+     * @return bool
+     */
+    public function isWriterInstance($writerRoles = 'author'): bool
+    {
+        if (is_array($writerRoles)) {
+            return in_array($this->role, $writerRoles);
+        }
+        return $this->role === $writerRoles;
+    }
+    
     //relation with the contact model "relation one to many"
     public function contact()
     {
@@ -134,6 +166,7 @@ class User extends Authenticatable
                            ->where('article_id', $article->article_id)
                            ->exists();
     }
+
 
     /**
      * Check if user has saved an article
