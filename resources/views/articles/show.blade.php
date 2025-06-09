@@ -94,7 +94,7 @@
                                     <i class="like-icon {{ $isLiked ? 'fa-solid' : 'fa-regular' }} fa-heart" style="color: #ff8787;"></i>
                                     <span class="like-count small text-muted">{{ $article->like_count ?? 0 }}</span>
                                 </button>
-                                <button type="button" class="p-2 border-0 bg-transparent" id="saveArticleButton"
+                                <button type="button" class="p-2 border-0 bg-transparent js-save-article-button" {{-- Changed id="saveArticleButton" to class="js-save-article-button" --}}
                                         data-saved="{{ $isSaved ? 'true' : 'false' }}"
                                         data-save-url="{{ route('articles.save', $article->article_id) }}"
                                         data-unsave-url="{{ route('articles.unsave', $article->article_id) }}"

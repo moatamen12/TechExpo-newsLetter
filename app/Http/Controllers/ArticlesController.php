@@ -28,7 +28,13 @@ class ArticlesController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('title', 'LIKE', '%' . $searchTerm . '%')
                   ->orWhere('content', 'LIKE', '%' . $searchTerm . '%')
-                  ->orWhere('summary', 'LIKE', '%' . $searchTerm . '%');
+                  ->orWhere('summary', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhereHas('categorie', function($categoryQuery) use ($searchTerm) {
+                      $categoryQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
+                  })
+                  ->orWhereHas('author.user', function($authorQuery) use ($searchTerm) {
+                      $authorQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
+                  });
             });
         }
 

@@ -193,11 +193,15 @@
                                                 </h5>
                                                 <div class="mt-auto"> {{-- Pushes button to the bottom if card heights vary --}}
                                                     {{-- Replace # with the actual unfollow route and $writer->user->user_id or $writer->profile_id as needed --}}
-                                                    <form action="#" method="POST" class="mt-2" style="position: relative; z-index: 2;">
-                                                        @csrf
-                                                        @method('DELETE') {{-- Or POST, depending on your route definition --}}
-                                                        <button type="submit" class="btn secondary-btn btn-sm px-3" style="border-radius: 20px; font-weight: 500;">Unfollow</button>
-                                                    </form>
+                                                    {{-- Removed old form --}}
+                                                    <button type="button" class="btn secondary-btn btn-sm px-3 js-follow-button" 
+                                                            style="border-radius: 20px; font-weight: 500; position: relative; z-index: 2;"
+                                                            data-profile-id="{{ $writer->profile_id }}"
+                                                            data-is-following="true"
+                                                            data-unfollow-url="{{ route('interactions.profiles.unfollow', $writer->profile_id) }}"
+                                                            data-follow-url="{{ route('interactions.profiles.follow', $writer->profile_id) }}">
+                                                        Unfollow
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -241,12 +245,14 @@
                                                         {{ $savedItem->article->categorie->name ?? 'Uncategorized' }}
                                                     </span>
                                                 </div>
-                                                {{-- {{ route('articles.unsave', $savedItem->article->article_id) }} --}}
-                                                <form action="#" method="POST" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3" style="border-radius: 20px; font-weight: 500;">Unsave</button>
-                                                </form>
+                                                {{-- Replace form with AJAX button --}}
+                                                <button type="button" class="p-2 border-0 bg-transparent js-save-article-button"
+                                                        data-saved="true" {{-- Article is currently saved --}}
+                                                        data-save-url="{{ route('articles.save', $savedItem->article->article_id) }}"
+                                                        data-unsave-url="{{ route('articles.unsave', $savedItem->article->article_id) }}"
+                                                        title="Unsave article">
+                                                    <i class="save-icon fa-solid fa-bookmark" style="color: #0d6efd;"></i> {{-- Icon for "saved" state --}}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

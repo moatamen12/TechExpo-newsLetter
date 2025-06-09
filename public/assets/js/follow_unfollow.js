@@ -31,9 +31,9 @@ class UserInteractions {
 
         // Save/Unsave functionality
         document.addEventListener('click', (e) => {
-            if (e.target.matches('#saveArticleButton') || e.target.closest('#saveArticleButton')) {
+            if (e.target.matches('.js-save-article-button') || e.target.closest('.js-save-article-button')) { // Changed selector from #saveArticleButton to .js-save-article-button
                 e.preventDefault();
-                this.handleSaveToggle(e.target.closest('#saveArticleButton'));
+                this.handleSaveToggle(e.target.closest('.js-save-article-button'));
             }
         });
     }
@@ -127,8 +127,10 @@ class UserInteractions {
                 
                 if (newIsSaved) {
                     icon.className = 'save-icon fa-solid fa-bookmark';
+                    button.title = 'Unsave article'; // Update title
                 } else {
                     icon.className = 'save-icon fa-regular fa-bookmark';
+                    button.title = 'Save article'; // Update title
                 }
 
                 this.showNotification(response.message, 'success');
