@@ -3,7 +3,11 @@
 </li>
 
 <li class="nav-item">
-    <a class="nav-link active" aria-current="page" href="{{route('dashboard.articles')}}">Contents</a>
+    <a class="nav-link active" aria-current="page" href="{{route('dashboard.articles')}}">Articles</a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="#">Newsletters</a>{{--{{route('dashboard.newsletter')}}--}}
 </li>
 
 <li class="nav-item">

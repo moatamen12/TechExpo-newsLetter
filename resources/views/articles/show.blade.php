@@ -41,6 +41,15 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center">
+                            @if($article->status == 'draft')
+                                <form action="{{ route('articles.publish', $article->article_id) }}" method="POST" class="me-2" onsubmit="return confirm('Are you sure you want to publish this article?');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-success btn-sm rounded-pill">
+                                        <i class="fas fa-check-circle me-1"></i> Publish Article
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('articles.edit', $article->article_id) }}" class="btn secondary-btn btn-sm me-2 rounded-pill">
                                 <i class="fas fa-edit me-1"></i> Edit
                             </a>

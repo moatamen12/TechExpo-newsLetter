@@ -47,6 +47,7 @@ Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, '
 // articles routs
 Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 Route::get('/articles/search', [ArticlesController::class, 'search'])->name('articles.search'); // New route for search
+
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
 
@@ -69,23 +70,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/articles/{article}/unsave', [ArticlesController::class, 'unsave'])->name('articles.unsave');
 });
 
-
 //dashboard Routes
 Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
+    //dashboard home and index
     Route::get('/dashboard',[DashboardController::class ,'index'])->name('dashboard');
-    Route::get('/dashboard/articles',[DashboardController::class ,'articles'])->name('dashboard.articles');
+    Route::get('/dashboard/articles/articles',[DashboardController::class ,'articles'])->name('dashboard.articles');
 
+    // for the article management
     Route::get('/dashboard/articles/create', [ArticlesController::class, 'create'])->name('articles.create');// createing and acrticle 
-    Route::post('/dashboard/articles', [ArticlesController::class, 'store'])->name('articles.store');// storing the article 
-    Route::post('/dashboard/upload-image', [ArticlesController::class, 'uploadImage'])->name('articles.upload-image');// uploading the images
-
-    Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit'])->name('articles.edit');//editing an article 
+    Route::post('/dashboard/articles',       [ArticlesController::class, 'store'])->name('articles.store');// storing the article 
+    Route::post('/dashboard/upload-image',   [ArticlesController::class, 'uploadImage'])->name('articles.upload-image');// uploading the images
+    Route::get('/dashboard/articles/edit/{article:article_id}',     [ArticlesController::class, 'edit'])->name('articles.edit');//editing an article 
     Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update'])->name('articles.update');// save the edite
     Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy'])->name('articles.destroy');//deleting an article 
+    Route::patch('articles/{article}/publish',        [ArticlesController::class, 'publish'])->name('articles.publish');//publish an article
+
+
+    //for the newsletter management
+    Route::get('/dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
     
-    Route::get('./dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
-    
-    // Route::post('/articles/{article_id}/toggle-like', [App\Http\Controllers\ArticlesController::class, 'toggleLike'])->name('articles.toggle-like');
+
+
 
 });
 
@@ -94,6 +99,7 @@ Route::get('/profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile');
+
 //route for the profile.show for author
 Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
     ->middleware('auth')
@@ -112,7 +118,7 @@ Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile.update');
-//delet reader acount
+//delet reader acount 
 Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
                       ->middleware('auth')
                       ->can('accessProfile') 

@@ -138,31 +138,36 @@ class ArticlesController extends Controller
         $article = Article::select('*')
                     ->with([
                         'author.user' => function($query) {
-                            $query->select('user_id', 'name');
+                            $query->select('user_id', 'name', 'profile_id');
                         },
-                        'categorie' // Make sure this is loaded
+                        'author' => function($query) {
+                            $query->with('user');
+                        },
+                        'categorie'
                     ])
-                    ->where('status', 'published')
                     ->where('article_id', $article_id)
                     ->firstOrFail();
-        // dd($article->name);
+
+        // Check access
+        if ($article->status === 'draft') {
+            if (!Auth::check() || Auth::id() != $article->author->user_id) {
+                abort(403, 'You do not have permission to view this draft.');
+            }
+        } elseif ($article->status !== 'published') {
+            abort(404);
+        }
         
         $relatedArticles = $this->relatedArticles($article->article_id, $article->author_id);
 
-        // Check if this article has been viewed in the current session
-        $viewedArticles = session()->get('viewed_articles', []);
-        // $article->increment('view_count'); // Increment view count
-        
-        // Only increment if the user hasn't viewed this article in the current session
-        if (!in_array($article_id, $viewedArticles)) {
-            $article->increment('view_count');
-            
-            // Add this article to the session's viewed articles
-            $viewedArticles[] = $article_id;
-            session()->put('viewed_articles', $viewedArticles);
+        if ($article->status === 'published') {
+            $viewedArticles = session()->get('viewed_articles', []);
+            if (!in_array($article_id, $viewedArticles)) {
+                $article->increment('view_count');
+                $viewedArticles[] = $article_id;
+                session()->put('viewed_articles', $viewedArticles);
+            }
         }
 
-        // Fetch parent comments (top-level comments only)
         $parentComments = Comment::where('article_id', $article_id)
             ->whereNull('parent_id')
             ->with(['user', 'replies.user'])
@@ -174,6 +179,33 @@ class ArticlesController extends Controller
             'comments' => $parentComments,
             'relatedArticles' => $relatedArticles
         ]);
+    }
+
+    // Publish a draft article
+    public function publish(Request $request, Article $article)
+    {
+        // Authorize: Check if the authenticated user is the author
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'You must be logged in.');
+        }
+
+        // Ensure the article's author relationship is loaded and user_id is accessible
+        // This assumes $article->author is the UserProfile model which has a user_id
+        if (!$article->author || $article->author->user_id !== $user->user_id) {
+             return redirect()->route('home')->with('error', 'You are not authorized to publish this article.');
+        }
+
+        if ($article->status === 'draft') {
+            $article->status = 'published';
+            if (is_null($article->published_at)) {
+                $article->published_at = now();
+            }
+            $article->save();
+            return redirect()->route('articles.show', $article->article_id)->with('success', 'Article published successfully!');
+        }
+
+        return redirect()->route('articles.show', $article->article_id)->with('info', 'Article is not a draft or already published.');
     }
 
     //create an article

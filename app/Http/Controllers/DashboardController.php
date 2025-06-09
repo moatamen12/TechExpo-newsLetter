@@ -18,7 +18,6 @@ class DashboardController extends Controller
 
     public function index()
     {
-        // Gate::authorize('accessDashboard');
 
         $profile_id = $this->getCorrentUser();
         $articles = $this->TopArticles(5, $profile_id);
@@ -32,14 +31,12 @@ class DashboardController extends Controller
 
     public function articles(Request $request)
     {
-        // Gate::authorize('accessDashboard');
-
         $profile_id = $this->getCorrentUser();
 
         $published = $this->publishedArticles($profile_id);
         $draft = $this->draftArticles($profile_id);
         // $scheduled = $this->scheduledArticles($profile_id);
-        return view('dashboard.articles', [
+        return view('dashboard.articles.articles', [
             'published' => $published,
             'draft' => $draft,
             // 'scheduled' => $scheduled,
@@ -83,7 +80,7 @@ class DashboardController extends Controller
         // }
         // Gate::authorize('accessDashboard');
 
-        return Article::select('article_id','author_id', 'title', 'status','view_count' ,'created_at')
+        return Article::select('article_id','author_id', 'title', 'status','view_count' ,'created_at','category_id')
             ->with(['author.user', 'categorie'])
             ->where('author_id', $user_id)
             ->orderByRaw('(view_count + like_count + comment_count) DESC')
@@ -124,7 +121,7 @@ class DashboardController extends Controller
         // }
         // // Gate::authorize('accessDashboard');
 
-        $articles = Article::select('article_id', 'title', 'status','view_count' ,'created_at')
+        $articles = Article::select('article_id', 'title', 'status','view_count' ,'category_id','created_at')
             ->with(['author.user', 'categorie'])
             ->where('author_id', $user_id)
             ->where('status', 'draft')

@@ -27,7 +27,9 @@
                     <div class="d-flex align-items-center position-relative">
                         <x-user_avatar :user="$article->author->user" />
                         <span class="ms-2 small">
-                            <a href="#" class="text-reset btn-link">
+                            <a href="{{ route('profile.show', $article->author->profile_id) }}" 
+                                class="text-reset btn-link fw-bold position-relative stretched-link"
+                                style="z-index: 1000;">
                                 @if ($article->author && $article->author->user)
                                     {{ $article->author->user->name }}
                                 @endif

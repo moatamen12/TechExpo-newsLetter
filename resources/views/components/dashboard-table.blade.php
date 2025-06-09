@@ -3,6 +3,7 @@
     <thead>
         <tr>
             <th scope="col">Title</th>
+            <th scope="col">catigory</th>
             <th scope="col">Status</th>
             <th scope="col">Reactions</th>
             <th scope="col">Publish Date</th>
@@ -13,6 +14,7 @@
         @forelse ($vars as $var)
             <tr class="clickable-row" data-href="{{ route('articles.show', $var['article_id']) }}">
                 <td>{{$var['title']}}</td>
+                <td>{{$var->categorie->name ?? 'N/A'}}</td>
                 <td>
                     @if ($var['status'] == 'published')
                         <span class="badge published">Published</span>

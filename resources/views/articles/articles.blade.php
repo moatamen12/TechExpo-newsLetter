@@ -34,7 +34,9 @@
                                             <ul class="nav align-items-center small text-decoration-none">
                                                 <li class="nav-item me-3">
                                                     <span class="ms-2">
-                                                        <a href="#" class="text-reset btn-link">
+                                                        <a href="{{ route('profile.show', $article->author->profile_id) }}"
+                                                           class="text-reset btn-link stretched-link fw-bold position-relative"
+                                                           style="z-index: 1000;">
                                                             @if ($article->author && $article->author->user)
                                                                 {{ $article->author->user->name }}
                                                             @endif

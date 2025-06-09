@@ -122,6 +122,7 @@
                         <h5 class="card-title fw-bold m-2">Top Performing Articles</h5>
                         <div class="card-body mt-2">
                             <x-dashboard-table :vars="$articles" tableID="articles"/>
+                            
                         </div>
                     </div>
                 </div>
