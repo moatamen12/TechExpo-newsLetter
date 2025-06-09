@@ -1,7 +1,7 @@
 <section class="container py-2 rounded-2 ">
     <div class="d-flex justify-content-between align-items-center">        
         <div class="mx-2 flex-grow-1">
-            <form action="{{ route('articles') }}" method="GET">
+            <form action="{{ route('articles.search') }}" method="GET">
                 <div class="position-relative input-group-sm">
                     <button class="btn border-0 position-absolute top-50 end-0 translate-middle-y me-2" type="submit">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="#6c757d" stroke="#6c757d" stroke-width="2">
@@ -37,22 +37,25 @@
                 
                 <ul class="dropdown-menu " aria-labelledby="filterDropdownToggle">
                     <li><h6 class="dropdown-header">Categories</h6></li>
-                    <li><a class="dropdown-item" href="?category=tech">Technology</a></li>
-                    <li><a class="dropdown-item" href="?category=ai">AI & Machine Learning</a></li>
-                    <li><a class="dropdown-item" href="?category=web">Web Development</a></li>
-                    <li><a class="dropdown-item" href="?category=data">Data Science</a></li>
+                    @if(isset($filterCategories) && $filterCategories->count() > 0)
+                        @foreach($filterCategories as $category)
+                            <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['category' => $category->name, 'page' => null]) }}">{{ $category->name }}</a></li>
+                        @endforeach
+                    @else
+                        <li><a class="dropdown-item" href="#">No categories found</a></li>
+                    @endif
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="?category=all">All Categories</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['category' => 'all', 'page' => null]) }}">All Categories</a></li>
                     
                     <li><hr class="dropdown-divider"></li> 
                     
                     <li><h6 class="dropdown-header">Time Period</h6></li>
-                    <li><a class="dropdown-item" href="?period=day">Today</a></li>
-                    <li><a class="dropdown-item" href="?period=week">This Week</a></li>
-                    <li><a class="dropdown-item" href="?period=month">This Month</a></li>
-                    <li><a class="dropdown-item" href="?period=year">This Year</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['period' => 'day', 'page' => null]) }}">Today</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['period' => 'week', 'page' => null]) }}">This Week</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['period' => 'month', 'page' => null]) }}">This Month</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['period' => 'year', 'page' => null]) }}">This Year</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="?period=all">All Time</a></li>
+                    <li><a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['period' => 'all', 'page' => null]) }}">All Time</a></li>
                 </ul>
             </div>
         </div>

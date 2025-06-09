@@ -19,33 +19,118 @@ class ArticlesController extends Controller
 {
     // Display the list of articles
     public function index(Request $request){
-        $query = Article::with(['author.user', 'categorie']) // Add 'categorie' here
+        $query = Article::with(['author.user', 'categorie']) 
                         ->where('status', 'published');
 
-        // Apply search filter if provided
-        if ($request->filled('q')) {
-            $searchTerm = $request->input('q');
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('title', 'LIKE', '%' . $searchTerm . '%')
-                  ->orWhere('content', 'LIKE', '%' . $searchTerm . '%')
-                  ->orWhere('summary', 'LIKE', '%' . $searchTerm . '%')
-                  ->orWhereHas('categorie', function($categoryQuery) use ($searchTerm) {
-                      $categoryQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
-                  })
-                  ->orWhereHas('author.user', function($authorQuery) use ($searchTerm) {
-                      $authorQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
-                  });
-            });
-        }
+        $query = $this->applyCommonFiltersAndSorting($request, $query);
 
-        // Apply category filter if provided
-        if ($request->filled('category')) {
-            $query->where('category_id', $request->input('category'));
-        }
-
-        $articles = $query->latest('published_at')->paginate(8);
+        $articles = $query->paginate(10)->appends($request->except('page'));
         
         return view('articles.articles', compact('articles'));
+    }
+
+    // New method to handle article search
+    public function search(Request $request)
+    {
+        $query = Article::with(['author.user', 'categorie'])
+                        ->where('status', 'published');
+
+        if ($request->filled('q')) {
+            $searchTerm = $request->input('q');
+            $query->where(function($q_sub) use ($searchTerm) { // Renamed $q to $q_sub
+                $q_sub->where('title', 'LIKE', '%' . $searchTerm . '%')
+                      ->orWhere('content', 'LIKE', '%' . $searchTerm . '%')
+                      ->orWhere('summary', 'LIKE', '%' . $searchTerm . '%')
+                      ->orWhereHas('categorie', function($categoryQuery) use ($searchTerm) {
+                          $categoryQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
+                      })
+                      ->orWhereHas('author.user', function($authorQuery) use ($searchTerm) {
+                          $authorQuery->where('name', 'LIKE', '%' . $searchTerm . '%');
+                      });
+            });
+        }
+        // If 'q' is not filled, it will list articles based on other filters (category, sort)
+        // or all published articles if no other filters are applied.
+
+        $query = $this->applyCommonFiltersAndSorting($request, $query);
+
+        $articles = $query->paginate(10)->appends($request->except('page'));
+
+        return view('articles.articles', compact('articles'));
+    }
+
+    // Private helper method to apply common filters and sorting
+    private function applyCommonFiltersAndSorting(Request $request, $query)
+    {
+        // Apply category filter
+        if ($request->filled('category')) {
+            $categoryName = $request->input('category');
+            if (strtolower($categoryName) !== 'all') { // Assuming 'all' means no category filter
+                $query->whereHas('categorie', function($categoryQuery) use ($categoryName) {
+                    $categoryQuery->where('name', $categoryName); // Filter by category name
+                });
+            }
+        }
+
+        // Apply sorting
+        $sortOption = $request->input('sort');
+        switch ($sortOption) {
+            case 'latest':
+                $query->orderBy('published_at', 'desc');
+                break;
+            case 'likes':
+                $query->orderBy('like_count', 'desc');
+                break;
+            case 'views':
+                $query->orderBy('view_count', 'desc');
+                break;
+            case 'trending':
+            default: // Default sort includes the original complex sorting
+                $query->orderByRaw('(IFNULL(view_count, 0) + IFNULL(like_count, 0) + IFNULL(comment_count, 0)) DESC');
+                break;
+        }
+
+        // Apply period filter
+        $period = $request->input('period');
+        if ($period && strtolower($period) !== 'all') {
+            $startDate = null;
+            switch (strtolower($period)) {
+                case 'day':
+                    $startDate = Carbon::today();
+                    break;
+                case 'week':
+                    $startDate = Carbon::now()->startOfWeek();
+                    break;
+                case 'month':
+                    $startDate = Carbon::now()->startOfMonth();
+                    break;
+                case 'year':
+                    $startDate = Carbon::now()->startOfYear();
+                    break;
+            }
+            if ($startDate) {
+                $query->where('published_at', '>=', $startDate);
+            }
+        }
+
+        return $query;
+    }
+    
+    // Function to validate the article data
+    public function validating(Request $request)
+    {
+        // Define validation rules
+        $rules = [
+            'title' => 'required|min:10|max:100',
+            'content' => 'required',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webP|max:2048', // 2MB Max
+            'status' => 'required|in:published,draft,scheduled',
+            'summary' => 'required|max:300|min:30',
+            'category_id' => 'required|exists:categories,category_id', 
+        ];
+
+        // Validate the request data
+        return Validator::make($request->all(), $rules);
     }
     
     // display the article by it's id
@@ -280,22 +365,7 @@ class ArticlesController extends Controller
         return redirect()->route('dashboard.articles')->with('success','Article Deleted Successfully');
     }
 
-    // Function to validate the article data
-    public function validating(Request $request)
-    {
-        // Define validation rules
-        $rules = [
-            'title' => 'required|min:10|max:100',
-            'content' => 'required',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webP|max:2048', // 2MB Max
-            'status' => 'required|in:published,draft,scheduled',
-            'summary' => 'required|max:300|min:30',
-            'category_id' => 'required|exists:categories,category_id', 
-        ];
 
-        // Validate the request data
-        return Validator::make($request->all(), $rules);
-    }
     
     public function uploadImage(Request $request)
     {
@@ -334,158 +404,159 @@ class ArticlesController extends Controller
         return  $relatedArticles ;
     }
 
-public function toggleLike(Request $request, $article_id)
-{
-    // Check if user is authenticated
-    if (!Auth::check()) {
-        return response()->json(['error' => 'User must be logged in'], 401);
-    }
-    
-    $user_id = Auth::id();
-    $article = Article::findOrFail($article_id);
-    
-    // Check if user already liked this article
-    $existingLike = ArticleLike::where('user_id', $user_id)
-                              ->where('article_id', $article_id)
-                              ->first();
-    
-    if ($existingLike) {
-        // User already liked the article, so unlike it
-        $existingLike->delete();
-        $article->decrement('like_count');
-        $liked = false;
-    } else {
-        // User hasn't liked the article, so add a like
-        ArticleLike::create([
-            'user_id' => $user_id,
-            'article_id' => $article_id
+    public function toggleLike(Request $request, $article_id)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return response()->json(['error' => 'User must be logged in'], 401);
+        }
+        
+        $user_id = Auth::id();
+        $article = Article::findOrFail($article_id);
+        
+        // Check if user already liked this article
+        $existingLike = ArticleLike::where('user_id', $user_id)
+                                ->where('article_id', $article_id)
+                                ->first();
+        
+        if ($existingLike) {
+            // User already liked the article, so unlike it
+            $existingLike->delete();
+            $article->decrement('like_count');
+            $liked = false;
+        } else {
+            // User hasn't liked the article, so add a like
+            ArticleLike::create([
+                'user_id' => $user_id,
+                'article_id' => $article_id
+            ]);
+            $article->increment('like_count');
+            $liked = true;
+        }
+        
+        return response()->json([
+            'liked' => $liked,
+            'like_count' => $article->like_count
         ]);
-        $article->increment('like_count');
-        $liked = true;
     }
-    
-    return response()->json([
-        'liked' => $liked,
-        'like_count' => $article->like_count
-    ]);
-}
 
-public function like($article_id)
-{
-    if (!Auth::check()) {
-        return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
-    }
-    
-    $user_id = Auth::id();
-    $article = Article::findOrFail($article_id);
-    
-    $existingLike = ArticleLike::where('user_id', $user_id)
-                              ->where('article_id', $article_id)
-                              ->first();
-    
-    if (!$existingLike) {
-        ArticleLike::create([
-            'user_id' => $user_id,
-            'article_id' => $article_id
+    public function like($article_id)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
+        }
+        
+        $user_id = Auth::id();
+        $article = Article::findOrFail($article_id);
+        
+        $existingLike = ArticleLike::where('user_id', $user_id)
+                                ->where('article_id', $article_id)
+                                ->first();
+        
+        if (!$existingLike) {
+            ArticleLike::create([
+                'user_id' => $user_id,
+                'article_id' => $article_id
+            ]);
+            $article->increment('like_count');
+        }
+        
+        return response()->json([
+            'success' => true,
+            'like_count' => $article->like_count,
+            'message' => 'Article liked!'
         ]);
-        $article->increment('like_count');
     }
-    
-    return response()->json([
-        'success' => true,
-        'like_count' => $article->like_count,
-        'message' => 'Article liked!'
-    ]);
-}
 
-public function unlike($article_id)
-{
-    if (!Auth::check()) {
-        return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
+    public function unlike($article_id)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
+        }
+        
+        $user_id = Auth::id();
+        $article = Article::findOrFail($article_id);
+        
+        $existingLike = ArticleLike::where('user_id', $user_id)
+                                ->where('article_id', $article_id)
+                                ->first();
+        
+        if ($existingLike) {
+            $existingLike->delete();
+            $article->decrement('like_count');
+        }
+        
+        return response()->json([
+            'success' => true,
+            'like_count' => $article->like_count,
+            'message' => 'Article unliked!'
+        ]);
     }
-    
-    $user_id = Auth::id();
-    $article = Article::findOrFail($article_id);
-    
-    $existingLike = ArticleLike::where('user_id', $user_id)
-                              ->where('article_id', $article_id)
-                              ->first();
-    
-    if ($existingLike) {
-        $existingLike->delete();
-        $article->decrement('like_count');
-    }
-    
-    return response()->json([
-        'success' => true,
-        'like_count' => $article->like_count,
-        'message' => 'Article unliked!'
-    ]);
-}
 
-/**
- * Save an article for a user
- *
- * @param \App\Models\Article $article
- * @return \Illuminate\Http\JsonResponse
- */
-public function save(Article $article)
-{
-    $user = Auth::user();
-    
-    // Check if already saved
-    $alreadySaved = \App\Models\userSavedArticle::where('user_id', $user->user_id)
+    /**
+     * Save an article for a user
+     *
+     * @param \App\Models\Article $article
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function save(Article $article)
+    {
+        $user = Auth::user();
+        
+        // Check if already saved
+        $alreadySaved = \App\Models\userSavedArticle::where('user_id', $user->user_id)
+                                                ->where('article_id', $article->article_id)
+                                                ->exists();
+        
+        if ($alreadySaved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already saved this article.'
+            ], 422);
+        }
+
+        // Save the article
+        \App\Models\userSavedArticle::create([
+            'user_id' => $user->user_id,
+            'article_id' => $article->article_id,
+            'saved_at' => now()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Article saved successfully.',
+            'is_saved' => true
+        ]);
+    }
+
+    /**
+     * Unsave an article for a user
+     *
+     * @param \App\Models\Article $article
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function unsave(Article $article)
+    {
+        $user = Auth::user();
+        
+        $savedArticle = \App\Models\userSavedArticle::where('user_id', $user->user_id)
                                             ->where('article_id', $article->article_id)
-                                            ->exists();
-    
-    if ($alreadySaved) {
+                                            ->first();
+        
+        if (!$savedArticle) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This article is not in your saved list.'
+            ], 422);
+        }
+
+        $savedArticle->delete();
+
         return response()->json([
-            'success' => false,
-            'message' => 'You have already saved this article.'
-        ], 422);
+            'success' => true,
+            'message' => 'Article removed from saved list.',
+            'is_saved' => false
+        ]);
     }
-
-    // Save the article
-    \App\Models\userSavedArticle::create([
-        'user_id' => $user->user_id,
-        'article_id' => $article->article_id,
-        'saved_at' => now()
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Article saved successfully.',
-        'is_saved' => true
-    ]);
-}
-
-/**
- * Unsave an article for a user
- *
- * @param \App\Models\Article $article
- * @return \Illuminate\Http\JsonResponse
- */
-public function unsave(Article $article)
-{
-    $user = Auth::user();
     
-    $savedArticle = \App\Models\userSavedArticle::where('user_id', $user->user_id)
-                                           ->where('article_id', $article->article_id)
-                                           ->first();
-    
-    if (!$savedArticle) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This article is not in your saved list.'
-        ], 422);
-    }
-
-    $savedArticle->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Article removed from saved list.',
-        'is_saved' => false
-    ]);
-}
 }

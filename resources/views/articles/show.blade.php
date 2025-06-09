@@ -77,7 +77,7 @@
                                 $isLiked = Auth::user()->hasLiked($article); // You'll need this method
                                 $isSaved = Auth::user()->hasSaved($article); // You'll need this method
                             @endphp
-                            <button type="button" class="btn {{ $isFollowing ? 'secondary-btn' : 'btn-outline-secondary' }} rounded-pill me-2 js-follow-button"
+                            <button type="button" class="btn {{ $isFollowing ? 'secondary-btn' : 'btn-subscribe-outline' }} rounded-pill me-2 js-follow-button"
                                     data-profile-id="{{ $article->author->profile_id }}"
                                     data-is-following="{{ $isFollowing ? 'true' : 'false' }}"
                                     data-follow-url="{{ route('interactions.profiles.follow', $article->author->profile_id) }}"

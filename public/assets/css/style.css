@@ -563,6 +563,14 @@ button.btn.btn-bg{  /* for the google sub */
 
     --focus-shadow: 0 0 0 0.2rem rgba(93, 167, 162, 0.25);
 }
+/* dark mode */
+/* 
+btn secoundary hove = 334c4d
+prim bf = 17171c
+secondary bg 242429
+
+
+*/
 
 .article-image-container {
     aspect-ratio: 4/3;

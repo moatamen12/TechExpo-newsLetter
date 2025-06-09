@@ -68,11 +68,11 @@
                                                     <h5 class="mb-0" style="font-weight: 700;">{{ $savedArticles->total() }}</h5>
                                                     <small class="text-muted" style="font-size: 0.75rem;">Saved Article</small>
                                                 </div>
-                                                {{-- Stat Item 3: Reactions --}}
-                                                <div class="text-center px-2"> {{-- Added horizontal padding --}}
+                                                {{-- Stat Item 3: Reactions
+                                                <div class="text-center px-2"> Added horizontal padding
                                                     <h5 class="mb-0" style="font-weight: 700;">12</h5>
                                                     <small class="text-muted" style="font-size: 0.75rem;">Reactions</small>
-                                                </div>
+                                                </div> --}}
                                             </div>
                                         </div>
                                     </div>
@@ -113,6 +113,15 @@
                                         role="tab" aria-controls="Saved" aria-selected="false"
                                         style="color: var(--tab-txt); font-weight: 500;">
                                     Saved Articles
+                                </button>
+                            </li>
+                            {{-- New Settings Tab --}}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link border-0 bg-transparent m-2" id="settings-tab" 
+                                        data-bs-toggle="pill" data-bs-target="#settings" type="button" 
+                                        role="tab" aria-controls="settings" aria-selected="false"
+                                        style="color: var(--tab-txt); font-weight: 500;">
+                                    Settings
                                 </button>
                             </li>
                         </ul>
@@ -299,6 +308,53 @@
                         @endif
                     </div>
                 </div>
+
+                {{-- Settings Tab Pane --}}
+                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                    <div class="container py-4">
+                        <h3 class="mb-4" style="font-weight: 600; color: #333;">Account Settings</h3>
+                        
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                Delete Account
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text text-danger">
+                                    <strong>Warning:</strong> Deleting your account is permanent and cannot be undone. 
+                                    All your data, including saved articles and followed writers, will be permanently removed.
+                                </p>
+                                {{-- {{ route('profile.delete') }} --}}
+                                <form action="{{ route('profile.delete') }}" method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This action is irreversible.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <div class="mb-3">
+                                        <label for="password_delete" class="form-label">Verify Password to Delete Account <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control form-control-sm @error('password_delete', 'deleteAccount') is-invalid @enderror" 
+                                                   id="password_delete" name="password_delete" 
+                                                   placeholder="Enter your current password" required autocomplete="current-password">
+                                            <x-visibility-toggle target="password_delete"/>
+                                        </div>
+                                        @error('password_delete', 'deleteAccount')
+                                            <div class="invalid-feedback d-block">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
+                                        {{-- General error from controller if password check fails but not a validation rule --}}
+                                        @if(session('error_delete_account'))
+                                            <div class="text-danger mt-2">
+                                                {{ session('error_delete_account') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete My Account Permanently</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{-- End of Settings Tab Pane --}}
+
             </div> 
         </div>
     </div>

@@ -46,6 +46,7 @@ Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, '
 
 // articles routs
 Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
+Route::get('/articles/search', [ArticlesController::class, 'search'])->name('articles.search'); // New route for search
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
 
@@ -68,7 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/articles/{article}/unsave', [ArticlesController::class, 'unsave'])->name('articles.unsave');
 });
 
-//newsletter routes
+
 //dashboard Routes
 Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::get('/dashboard',[DashboardController::class ,'index'])->name('dashboard');
@@ -84,16 +85,21 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     
     Route::get('./dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
     
-    Route::post('/articles/{article_id}/toggle-like', [App\Http\Controllers\ArticlesController::class, 'toggleLike'])->name('articles.toggle-like');
+    // Route::post('/articles/{article_id}/toggle-like', [App\Http\Controllers\ArticlesController::class, 'toggleLike'])->name('articles.toggle-like');
 
 });
-
 
 // route to the profile page
 Route::get('/profile',[ProfilesController::class,'index'])
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile');
+//route for the profile.show for author
+Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
+    ->middleware('auth')
+    ->can('accessProfile')
+    ->name('profile.show');
+    
 
 //reader profile
 Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
@@ -106,45 +112,11 @@ Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'
                       ->middleware('auth')  
                       ->can('accessProfile') 
                       ->name('profile.update');
-
-
-//route for the profile.show
-Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
-    ->name('profile.show')
-    ->middleware('auth')
-    ->can('accessProfile');
-
-
-
-
-// //edit an article 
-// Route::get('/dashboard/articles/edit/{article:article_id}', [ArticlesController::class, 'edit']) //editing an article 
-//                         ->middleware('auth') 
-//                         ->can('accessDashboard')
-//                         ->name('articles.edit');
-
-// // Update an article
-// Route::patch('/dashboard/articles/update/{article:article_id}', [ArticlesController::class, 'update']) //save the edit of an  article 
-//                         ->middleware('auth') 
-//                         ->can('accessDashboard')
-//                         ->name('articles.update');
-
-// //Destroy an article
-// Route::delete('/dashboard/articles/{article_id}', [ArticlesController::class, 'destroy']) //deleting an article 
-//                         ->middleware('auth') 
-//                         ->can('accessDashboard')
-//                         ->name('articles.destroy');
-
-// // Route::get('/dashboard/articles/edit{article}', [ArticlesController::class, 'edit']) //editing an article 
-// //                         ->middleware('auth') 
-// //                         ->can('accessDashboard')
-// //                         ->name('articles.edit');
-
-
-
-
-
-
+//delet reader acount
+Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
+                      ->middleware('auth')
+                      ->can('accessProfile') 
+                      ->name('profile.delete');
 
 
 

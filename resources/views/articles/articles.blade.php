@@ -10,10 +10,10 @@
         </div>
 
         <div class="row">
-            <div class="col-md-12 px-4" id="articles-container">
+            <div class="col-md-12 px-4" id="articles-container ">
                 @forelse ($articles as $article)
                     <!-- used in the artical card viewing -->
-                    <div class="card rounded-4 p-4 my-4 articall-card-hover border-1 border-light-subtle">
+                    <div class="card rounded-4 p-4 my-4 articall-card-hover border-1 border-light-subtle ">
                         <div class="row g-3">
                             <div class="col-lg-5 d-flex flex-column">
                                 <!-- Categories -->

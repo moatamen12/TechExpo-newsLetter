@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\userSavedArticle;
 use App\Models\User;
 use App\Models\Article;
-use App\Models\userFollower; // Corrected model name
+use App\Models\userFollower; 
+use App\Models\Contact;
+use App\Models\ArticleLike; 
 use App\Models\UserProfiles;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -146,4 +148,66 @@ class ProfilesController extends Controller
         return redirect()->route('profile')->with('success', 'Profile updated successfully!');
     }
 
+
+    public function deletReaderProfile(Request $request) // Method name as per your existing empty function
+    {
+        $user = Auth::user();
+
+        $request->validateWithBag('deleteAccount', [ // Using 'deleteAccount' error bag as per your blade file
+            'password_delete' => ['required', 'string'],
+        ], [
+            'password_delete.required' => 'Password is required to delete your account.'
+        ]);
+
+        if (!Hash::check($request->password_delete, $user->password)) {
+            return redirect()->back()
+                             ->withInput() // Keep the form input (though password fields are usually not repopulated for security)
+                             ->with('error_delete_account', 'The provided password does not match your current password.') // Session flash for general error display
+                             ->withErrors(['password_delete' => 'Incorrect password.'], 'deleteAccount'); // Specific error for the field
+        }
+
+        // Optional: Wrap in a database transaction if you have multiple critical delete operations
+        // DB::beginTransaction();
+
+        try {
+            if (class_exists(Contact::class)) {
+                Contact::where('user_id', $user->user_id)->delete();
+            }
+
+            // Example: Delete related article likes if ArticleLike model exists
+            // and 'user_id' is the foreign key.
+            if (class_exists(ArticleLike::class)) {
+                ArticleLike::where('user_id', $user->user_id)->delete();
+            }
+            
+            // Note:
+            // - UserSavedArticle records are expected to be deleted by ON DELETE CASCADE.
+            // - Comment records are expected to be deleted by ON DELETE CASCADE.
+            // - UserFollower records (where this user is the follower) are expected to be deleted by ON DELETE CASCADE.
+            // - A reader user does not have a UserProfile, so no UserProfile deletion is needed.
+
+            // 2. Log the user out BEFORE deleting their record from the users table.
+            Auth::logout();
+            // Invalidate the session and regenerate the token after logout.
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            // 3. Delete the user. This should trigger the ON DELETE CASCADE for related tables.
+            $user->delete();
+
+            // DB::commit(); // Commit transaction if used
+
+            return redirect()->route('home')->with('success', 'Your account has been successfully deleted.');
+
+        } catch (\Exception $e) {
+            // DB::rollBack(); // Rollback transaction if used
+
+            // Log the error for debugging purposes
+            // \Illuminate\Support\Facades\Log::error('Account deletion failed for user ID ' . $user->user_id . ': ' . $e->getMessage());
+            
+            // Since the user is already logged out, redirecting them home with an error is a safe bet.
+            // You might want to add more sophisticated error handling or user notification.
+            return redirect()->route('home')->with('error', 'An error occurred while trying to delete your account. Please contact support.');
+        }
+    }
 }
