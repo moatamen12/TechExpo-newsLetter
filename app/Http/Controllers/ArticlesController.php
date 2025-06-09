@@ -363,4 +363,123 @@ public function toggleLike(Request $request, $article_id)
         'like_count' => $article->like_count
     ]);
 }
+
+public function like($article_id)
+{
+    if (!Auth::check()) {
+        return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
+    }
+    
+    $user_id = Auth::id();
+    $article = Article::findOrFail($article_id);
+    
+    $existingLike = ArticleLike::where('user_id', $user_id)
+                              ->where('article_id', $article_id)
+                              ->first();
+    
+    if (!$existingLike) {
+        ArticleLike::create([
+            'user_id' => $user_id,
+            'article_id' => $article_id
+        ]);
+        $article->increment('like_count');
+    }
+    
+    return response()->json([
+        'success' => true,
+        'like_count' => $article->like_count,
+        'message' => 'Article liked!'
+    ]);
+}
+
+public function unlike($article_id)
+{
+    if (!Auth::check()) {
+        return response()->json(['success' => false, 'message' => 'User must be logged in'], 401);
+    }
+    
+    $user_id = Auth::id();
+    $article = Article::findOrFail($article_id);
+    
+    $existingLike = ArticleLike::where('user_id', $user_id)
+                              ->where('article_id', $article_id)
+                              ->first();
+    
+    if ($existingLike) {
+        $existingLike->delete();
+        $article->decrement('like_count');
+    }
+    
+    return response()->json([
+        'success' => true,
+        'like_count' => $article->like_count,
+        'message' => 'Article unliked!'
+    ]);
+}
+
+/**
+ * Save an article for a user
+ *
+ * @param \App\Models\Article $article
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function save(Article $article)
+{
+    $user = Auth::user();
+    
+    // Check if already saved
+    $alreadySaved = \App\Models\userSavedArticle::where('user_id', $user->user_id)
+                                            ->where('article_id', $article->article_id)
+                                            ->exists();
+    
+    if ($alreadySaved) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You have already saved this article.'
+        ], 422);
+    }
+
+    // Save the article
+    \App\Models\userSavedArticle::create([
+        'user_id' => $user->user_id,
+        'article_id' => $article->article_id,
+        'saved_at' => now()
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Article saved successfully.',
+        'is_saved' => true
+    ]);
+}
+
+/**
+ * Unsave an article for a user
+ *
+ * @param \App\Models\Article $article
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function unsave(Article $article)
+{
+    $user = Auth::user();
+    
+    $savedArticle = \App\Models\userSavedArticle::where('user_id', $user->user_id)
+                                           ->where('article_id', $article->article_id)
+                                           ->first();
+    
+    if (!$savedArticle) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This article is not in your saved list.'
+        ], 422);
+    }
+
+    $savedArticle->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Article removed from saved list.',
+        'is_saved' => false
+    ]);
+}
 }

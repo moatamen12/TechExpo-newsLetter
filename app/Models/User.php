@@ -125,5 +125,23 @@ class User extends Authenticatable
         return $this->following()->detach($userId);
     }
 
+    /**
+     * Check if user has liked an article
+     */
+    public function hasLiked($article)
+    {
+        return \App\Models\ArticleLike::where('user_id', $this->user_id)
+                           ->where('article_id', $article->article_id)
+                           ->exists();
+    }
 
+    /**
+     * Check if user has saved an article
+     */
+    public function hasSaved($article)
+    {
+        return \App\Models\userSavedArticle::where('user_id', $this->user_id)
+                           ->where('article_id', $article->article_id)
+                           ->exists();
+    }
 }

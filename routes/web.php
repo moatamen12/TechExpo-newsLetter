@@ -48,11 +48,24 @@ Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, '
 Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
-//follow and unfollow
 
 Route::middleware('auth')->group(function () {
+    // Comments routes
+    Route::post('/comments/{article:article_id}', [CommentController::class, 'store'])->name('comments.store');
+    Route::put('/comments/{comment_id}', [CommentController::class, 'update'])->name('comments.update');
+    Route::delete('/comments/{comment_id}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    
+    // Follow/Unfollow routes
     Route::post('/follow/{profile}', [ReaderEnteractions::class, 'follow'])->name('interactions.profiles.follow');
     Route::delete('/unfollow/{profile}', [ReaderEnteractions::class, 'unfollow'])->name('interactions.profiles.unfollow');
+    
+    // Like/Unlike routes
+    Route::post('/articles/{article}/like', [ArticlesController::class, 'like'])->name('articles.like');
+    Route::post('/articles/{article}/unlike', [ArticlesController::class, 'unlike'])->name('articles.unlike');
+    
+    // Save/Unsave routes
+    Route::post('/articles/{article}/save', [ArticlesController::class, 'save'])->name('articles.save');
+    Route::post('/articles/{article}/unsave', [ArticlesController::class, 'unsave'])->name('articles.unsave');
 });
 
 //newsletter routes
@@ -135,5 +148,3 @@ Route::get('/contact', [ContactController::class, 'create'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.submit'); //for when submeted
 //about us route
 Route::get('/about', function () { return view('about_us.about_us'); })->name('about');
-//the storing commints route
-Route::post('/comments/{article:article_id}', [CommentController::class, 'store'])->name('comments.store');

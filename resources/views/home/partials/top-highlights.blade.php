@@ -16,7 +16,7 @@
                     {{-- <!-- Category & Title --> --}}
                     <div class="mb-3">
                         <span class="badge mb-2 text-start ">
-                            <i class="fas fa-circle me-2 small fw-bold"></i>{{ $featuredArticle->categorie_name }}
+                            <i class="fas fa-circle me-2 small fw-bold"></i>{{ $featuredArticle->categorie->name }}
                         </span>
                         <h2 class="card-title">
                             <a href="{{ route('articles.show', $featuredArticle->article_id) }}" 

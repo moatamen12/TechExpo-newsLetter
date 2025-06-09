@@ -10,11 +10,10 @@ class userSavedArticle extends Model
 
 
     protected $table = 'user_saved_articles'; // Explicitly define if not following convention
-
-    // If your primary key is not 'id' or not auto-incrementing, define it
-    // protected $primaryKey = 'your_primary_key_name';
-    // public $incrementing = false; 
-    // protected $keyType = 'string';
+    
+    // Disable timestamps since we're handling saved_at manually and 
+    // the table doesn't have created_at/updated_at columns
+    public $timestamps = false;
 
     protected $fillable = [
         'user_id',
