@@ -8,17 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class ArticleLike extends Model
 {
-    use HasFactory;
 
     protected $fillable = ['user_id', 'article_id'];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function article()
     {
-        return $this->belongsTo(Article::class);
+        return $this->belongsTo(Article::class, 'article_id', 'article_id');
     }
 }

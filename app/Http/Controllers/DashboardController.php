@@ -10,6 +10,7 @@ use App\Models\UserProfiles;
 use App\Models\ArticleLike;
 use App\Models\Comment;
 use App\Models\userSavedArticle;
+use App\Models\userFollower;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -256,65 +257,104 @@ class DashboardController extends Controller
         
         $activities = $activities->merge($recentArticles);
         
-        // Get recent likes on your articles using ArticleLike model
-        $recentLikes = ArticleLike::with(['user', 'article'])
-                        ->whereHas('article', function($query) use ($authorId) {
-                            $query->where('author_id', $authorId);
-                        })
-                        ->orderBy('created_at', 'desc')
-                        ->take(3)
-                        ->get()
-                        ->map(function($like) {
-                            return [
-                                'type' => 'like',
-                                'title' => 'New Like',
-                                'description' => ($like->user->name ?? 'Someone') . ' liked "' . ($like->article->title ?? 'your article') . '"',
-                                'time' => $like->created_at->diffForHumans(),
-                                'created_at' => $like->created_at
-                            ];
-                        });
+        // Get recent followers using userFollower model
+        try {
+            $recentFollowers = userFollower::with(['follower'])
+                                ->where('following_id', $authorId)
+                                ->orderBy('created_at', 'desc')
+                                ->take(3)
+                                ->get()
+                                ->map(function($follow) {
+                                    return [
+                                        'type' => 'follower',
+                                        'title' => 'New Follower',
+                                        'description' => ($follow->follower->name ?? 'Someone') . ' started following you',
+                                        'time' => $follow->created_at ? $follow->created_at->diffForHumans() : 'Recently',
+                                        'created_at' => $follow->created_at ?? now()
+                                    ];
+                                });
+            
+            $activities = $activities->merge($recentFollowers);
+        } catch (\Exception $e) {
+            // Continue without followers if there's an issue
+        }
         
-        $activities = $activities->merge($recentLikes);
+        // Get recent likes on your articles using raw query if model relationships are problematic
+        try {
+            $recentLikes = DB::table('article_likes')
+                            ->join('articles', 'article_likes.article_id', '=', 'articles.article_id')
+                            ->join('users', 'article_likes.user_id', '=', 'users.user_id')
+                            ->where('articles.author_id', $authorId)
+                            ->orderBy('article_likes.created_at', 'desc')
+                            ->take(3)
+                            ->select(
+                                'users.name as user_name',
+                                'articles.title as article_title',
+                                'article_likes.created_at'
+                            )
+                            ->get()
+                            ->map(function($like) {
+                                return [
+                                    'type' => 'like',
+                                    'title' => 'New Like',
+                                    'description' => ($like->user_name ?? 'Someone') . ' liked "' . ($like->article_title ?? 'your article') . '"',
+                                    'time' => Carbon::parse($like->created_at)->diffForHumans(),
+                                    'created_at' => Carbon::parse($like->created_at)
+                                ];
+                            });
+            
+            $activities = $activities->merge($recentLikes);
+        } catch (\Exception $e) {
+            // If likes table doesn't exist or has issues, continue without likes
+        }
         
-        // Get recent comments on your articles using Comment model
-        $recentComments = Comment::with(['user', 'article'])
-                           ->whereHas('article', function($query) use ($authorId) {
-                               $query->where('author_id', $authorId);
-                           })
-                           ->orderBy('created_at', 'desc')
-                           ->take(3)
-                           ->get()
-                           ->map(function($comment) {
-                               return [
-                                   'type' => 'comment',
-                                   'title' => 'New Comment',
-                                   'description' => ($comment->user->name ?? 'Someone') . ' commented on "' . ($comment->article->title ?? 'your article') . '"',
-                                   'time' => $comment->created_at->diffForHumans(),
-                                   'created_at' => $comment->created_at
-                               ];
-                           });
+        // Get recent comments on your articles
+        try {
+            $recentComments = Comment::with(['user', 'article'])
+                               ->whereHas('article', function($query) use ($authorId) {
+                                   $query->where('author_id', $authorId);
+                               })
+                               ->orderBy('created_at', 'desc')
+                               ->take(3)
+                               ->get()
+                               ->map(function($comment) {
+                                   return [
+                                       'type' => 'comment',
+                                       'title' => 'New Comment',
+                                       'description' => ($comment->user->name ?? 'Someone') . ' commented on "' . ($comment->article->title ?? 'your article') . '"',
+                                       'time' => $comment->created_at->diffForHumans(),
+                                       'created_at' => $comment->created_at
+                                   ];
+                               });
+            
+            $activities = $activities->merge($recentComments);
+        } catch (\Exception $e) {
+            // Continue without comments if there's an issue
+        }
         
-        $activities = $activities->merge($recentComments);
-        
-        // Get recent saves of your articles using userSavedArticle model
-        $recentSaves = userSavedArticle::with(['user', 'article'])
-                        ->whereHas('article', function($query) use ($authorId) {
-                            $query->where('author_id', $authorId);
-                        })
-                        ->orderBy('saved_at', 'desc')
-                        ->take(3)
-                        ->get()
-                        ->map(function($save) {
-                            return [
-                                'type' => 'save',
-                                'title' => 'Article Saved',
-                                'description' => ($save->user->name ?? 'Someone') . ' saved "' . ($save->article->title ?? 'your article') . '"',
-                                'time' => $save->saved_at->diffForHumans(),
-                                'created_at' => $save->saved_at
-                            ];
-                        });
-        
-        $activities = $activities->merge($recentSaves);
+        // Get recent saves of your articles
+        try {
+            $recentSaves = userSavedArticle::with(['user', 'article'])
+                            ->whereHas('article', function($query) use ($authorId) {
+                                $query->where('author_id', $authorId);
+                            })
+                            ->orderBy('saved_at', 'desc')
+                            ->take(3)
+                            ->get()
+                            ->map(function($save) {
+                                return [
+                                    'type' => 'save',
+                                    'title' => 'Article Saved',
+                                    'description' => ($save->user->name ?? 'Someone') . ' saved "' . ($save->article->title ?? 'your article') . '"',
+                                    'time' => $save->saved_at->diffForHumans(),
+                                    'created_at' => $save->saved_at
+                                ];
+                            });
+            
+            $activities = $activities->merge($recentSaves);
+        } catch (\Exception $e) {
+            // Continue without saves if there's an issue
+        }
         
         // Add some sample activities if no real data
         if ($activities->isEmpty()) {

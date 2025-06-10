@@ -132,8 +132,7 @@
                                             <td class="py-3">
                                                 <div>
                                                     <a href="{{route('articles.show',$article['article_id'])}}"
-                                                       class="text-reset btn-link stretched-link fw-bold position-relative"
-                                                       style="z-index: 1000;">
+                                                       class="text-reset btn-link stretched-link fw-bold position-relative">
                                                         <strong class="d-block text-dark">{{ $article['title'] }}</strong>
                                                     </a>
                                                     <small class="text-muted">{{ $article['date'] }}</small>
@@ -177,33 +176,10 @@
                     </div>
                 </div>
 
-                <!-- Right Column - Categories and Recent Activity -->
+                <!-- Right Column - Recent Activity and Categories -->
                 <div class="col-lg-4">
-                    <!-- Content Categories Pie Chart (Smaller) -->
+                    <!-- Recent Activity Section (Moved Above) -->
                     <div class="card border-light shadow-sm mb-4">
-                        <div class="card-header bg-white border-0 pb-2">
-                            <h6 class="card-title fw-bold mb-0">Content Categories</h6>
-                        </div>
-                        <div class="card-body py-3">
-                            <div class="d-flex align-items-center justify-content-center mb-3">
-                                <canvas id="categoryChart" width="150" height="150" style="max-height: 150px;"></canvas>
-                            </div>
-                            <div>
-                                @foreach($categoryStats as $category)
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2" style="width: 8px; height: 8px; background-color: {{ $loop->index == 0 ? '#20c997' : ($loop->index == 1 ? '#17a2b8' : ($loop->index == 2 ? '#6f42c1' : '#fd7e14')) }};"></div>
-                                        <span class="small text-muted">{{ $category['name'] }}</span>
-                                    </div>
-                                    <span class="small fw-bold">{{ $category['percentage'] }}%</span>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Activity Section -->
-                    <div class="card border-light shadow-sm">
                         <div class="card-header bg-white border-0 pb-2">
                             <h6 class="card-title fw-bold mb-0">Recent Activity</h6>
                         </div>
@@ -211,7 +187,7 @@
                             @forelse($recentActivity as $activity)
                             <div class="d-flex align-items-start mb-3">
                                 <div class="flex-shrink-0 me-3">
-                                    <div class="bg-{{ $activity['type'] == 'article' ? 'primary' : ($activity['type'] == 'comment' ? 'success' : ($activity['type'] == 'like' ? 'danger' : ($activity['type'] == 'save' ? 'warning' : 'info'))) }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <div class="bg-{{ $activity['type'] == 'article' ? 'primary' : ($activity['type'] == 'comment' ? 'success' : ($activity['type'] == 'like' ? 'danger' : ($activity['type'] == 'save' ? 'warning' : ($activity['type'] == 'follower' ? 'info' : 'secondary')))) }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                         @if($activity['type'] == 'article')
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -231,6 +207,13 @@
                                         @elseif($activity['type'] == 'save')
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                            </svg>
+                                        @elseif($activity['type'] == 'follower')
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="9" cy="7" r="4"/>
+                                                <path d="M22 21v-2a4 4 0 0 0-3-1"/>
+                                                <circle cx="16" cy="7" r="3"/>
                                             </svg>
                                         @else
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -252,6 +235,29 @@
                                 <small class="text-muted">No recent activity</small>
                             </div>
                             @endforelse
+                        </div>
+                    </div>
+
+                    <!-- Content Categories Pie Chart (Smaller) -->
+                    <div class="card border-light shadow-sm">
+                        <div class="card-header bg-white border-0 pb-2">
+                            <h6 class="card-title fw-bold mb-0">Content Categories</h6>
+                        </div>
+                        <div class="card-body py-3">
+                            <div class="d-flex align-items-center justify-content-center mb-3">
+                                <canvas id="categoryChart" width="150" height="150" style="max-height: 150px;"></canvas>
+                            </div>
+                            <div>
+                                @foreach($categoryStats as $category)
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle me-2" style="width: 8px; height: 8px; background-color: {{ $loop->index == 0 ? '#20c997' : ($loop->index == 1 ? '#17a2b8' : ($loop->index == 2 ? '#6f42c1' : '#fd7e14')) }};"></div>
+                                        <span class="small text-muted">{{ $category['name'] }}</span>
+                                    </div>
+                                    <span class="small fw-bold">{{ $category['percentage'] }}%</span>
+                                </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 </div>
