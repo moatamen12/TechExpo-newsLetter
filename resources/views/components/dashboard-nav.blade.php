@@ -1,5 +1,5 @@
 <li class="nav-item">
-    <a class="nav-link active" aria-current="page" href="{{route('dashboard')}}">Home</a>
+    <a class="nav-link active" aria-current="page" href="{{route('dashboard')}}">Dashboard</a>
 </li>
 
 <li class="nav-item">
@@ -15,6 +15,6 @@
 </li>
 
 
-<li class="nav-item">
+{{-- <li class="nav-item">
     <a class="nav-link" href="#">Settings</a>
-</li>
+</li> --}}

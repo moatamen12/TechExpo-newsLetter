@@ -37,8 +37,8 @@
                             <bold>•••</bold>
                         </button>
                         <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ route('articles.show', $var['article_id']) }}">Send As newsletter</a></li>
                             <li><a class="dropdown-item" href="{{ route('articles.edit', $var['article_id']) }}">Edit</a></li>
-                            <li><a class="dropdown-item" href="{{ route('articles.show', $var['article_id']) }}">View State</a></li>
                             <li>
                                 <form action="{{route('articles.destroy',$var['article_id'])}}" method="POST" class="dropdown-item text-danger delete-item-form">
                                     @csrf

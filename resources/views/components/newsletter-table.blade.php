@@ -3,7 +3,6 @@
     <thead>
         <tr>
             <th scope="col">Title</th>
-            <th scope="col">Author</th>
             <th scope="col">Status</th>
             <th scope="col">Recipients</th>
             <th scope="col">Sent/Failed</th>
@@ -31,12 +30,6 @@
                             <h6 class="mb-0">{{ Str::limit($newsletter->title, 40) }}</h6>
                             <small class="text-muted">{{ Str::limit($newsletter->description ?? strip_tags($newsletter->content), 60) }}</small>
                         </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <x-user_avatar :user="$newsletter->author ?? auth()->user()" size="sm" />
-                        <span class="ms-2">{{ $newsletter->author->name ?? 'Newsletter Team' }}</span>
                     </div>
                 </td>
                 <td>

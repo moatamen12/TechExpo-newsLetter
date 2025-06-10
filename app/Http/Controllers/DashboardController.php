@@ -100,6 +100,14 @@ class DashboardController extends Controller
             'totalComments' => $totalcomment,
             'userName' => $user->user->name ?? 'User',
             'userEmail' => $user->user->email ?? '',
+            // Add social media links
+            'socialTwitter' => $user->social_twitter ?? null,
+            'socialLinkedin' => $user->social_linkedin ?? null,
+            'socialGithub' => $user->social_github ?? null,
+            'socialWebsite' => $user->social_website ?? null,
+            'profilePhoto' => $user->profile_photo ?? null,
+            'bio' => $user->bio ?? null,
+            'title' => $user->title ?? null,
             // Add percentage data
             'articlesPercentage' => $articlesChange['percentage'],
             'articlesDirection' => $articlesChange['direction'],

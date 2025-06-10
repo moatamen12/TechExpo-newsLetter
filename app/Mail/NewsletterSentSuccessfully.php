@@ -9,16 +9,22 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ArticlePosted extends Mailable
+class NewsletterSentSuccessfully extends Mailable
 {
     use Queueable, SerializesModels;
+
+    public $newsletter;
+    public $author;
+    public $stats;
 
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($newsletter, $author, $stats)
     {
-        //
+        $this->newsletter = $newsletter;
+        $this->author = $author;
+        $this->stats = $stats;
     }
 
     /**
@@ -27,7 +33,7 @@ class ArticlePosted extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Article Posted',
+            subject: 'Newsletter Sent Successfully - ' . ($this->newsletter->title ?? 'TechExpo Newsletter'),
         );
     }
 
@@ -37,7 +43,12 @@ class ArticlePosted extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.articlePosted',
+            view: 'mail.newsletter-sent-succesfuly',
+            with: [
+                'newsletter' => $this->newsletter,
+                'author' => $this->author,
+                'stats' => $this->stats,
+            ]
         );
     }
 

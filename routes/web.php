@@ -1,7 +1,8 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ArticlesController;
 use App\Http\Controllers\ContactController;
@@ -14,82 +15,102 @@ use App\Http\Controllers\newsletterController;
 use App\Http\Controllers\ReaderEnteractions;
 use App\Mail\NewsletterEmail;
 
-// // Test emailing route - sends to motx98990@gmail.com
-// Route::get('/test-newsletter-email', function () {
-//     $newsletterData = [
-//         'title' => 'Weekly Tech Update - AI Innovations',
-//         'summary' => 'Discover the latest breakthroughs in artificial intelligence and how they\'re shaping our future. This week we cover new developments in machine learning, robotics, and more.',
-//         'content' => '
-//             <h2>🚀 This Week\'s Highlights</h2>
-//             <p>Hello there! Welcome to another exciting edition of our weekly newsletter. This week, we\'re diving deep into the fascinating world of artificial intelligence and its revolutionary impact on various industries.</p>
+Route::get('/preview/newsletter-email', function(){
+    return view('mail.newsletter-email', [
+        'newsletter' => (object)[
+            'title' => 'Weekly Tech Digest - Preview',
+            'content' => '<h2>Latest Tech Insights</h2>
+            <p>Welcome to this week\'s edition of TechExpo Newsletter! We\'ve curated the most exciting developments in technology and science just for you.</p>
             
-//             <h3>🧠 AI Breakthrough: GPT-4 Vision</h3>
-//             <p>OpenAI has released GPT-4 Vision, a groundbreaking multimodal AI that can understand and analyze images alongside text. This development opens up incredible possibilities for content creation, medical diagnosis, education, and accessibility.</p>
+            <h3>This Week\'s Highlights</h3>
+            <ul>
+                <li>Revolutionary AI breakthroughs changing the industry</li>
+                <li>New sustainable tech innovations</li>
+                <li>Latest developments in quantum computing</li>
+                <li>Emerging trends in cybersecurity</li>
+            </ul>
             
-//             <ul>
-//                 <li><strong>Content Creation:</strong> Automatic image descriptions and alt-text generation</li>
-//                 <li><strong>Medical Diagnosis:</strong> AI-assisted analysis of medical imagery</li>
-//                 <li><strong>Education:</strong> Interactive learning with visual content understanding</li>
-//                 <li><strong>Accessibility:</strong> Better tools for visually impaired users</li>
-//             </ul>
-            
-//             <h3>💼 Industry Spotlight: AI in Healthcare</h3>
-//             <p>The healthcare industry is experiencing a revolutionary transformation thanks to artificial intelligence. From diagnostic imaging to drug discovery, AI is making healthcare more accurate, efficient, and accessible.</p>
-//         ',
-//         'newsletter_type' => 'weekly',
-//         'featured_image' => 'https://via.placeholder.com/600x250/667eea/ffffff?text=Featured+Image'
-//     ];
+            <p>Stay ahead of the curve with our expertly curated content, designed to keep you informed about the rapidly evolving world of technology.</p>',
+            'created_at' => now(),
+            'newsletter_type' => 'Weekly',
+            'featured_image' => 'default-newsletter.jpg',
+            'catagorie' => 'technology'
+        ],
+        'author' => (object)[
+            'name' => 'Tech Expert',
+            'id' => 1,
+            'userProfile' => (object)[
+                'profile_photo' => 'default-avatar.jpg',
+                'title' => 'Technology Writer & Expert',
+                'bio' => 'Passionate about technology and innovation, bringing you the latest insights from the tech world.'
+            ]
+        ]
+    ]);
+})->name('preview.newsletter');
 
-//     $subscriber = (object) [
-//         'name' => 'Test User',
-//         'email' => 'naief.moatamen@etu.univ-mosta.dz',
-//         'unsubscribe_token' => 'demo-token',
-//         'preferences_token' => 'demo-token'
-//     ];
-
-//     return new \App\Mail\NewsletterEmail($newsletterData, $subscriber);
-// })->name('test.newsletter.email');
-
-// // Route to actually SEND the test email to motx98990@gmail.com
-// Route::get('/send-test-newsletter-email', function () {
-//     $newsletterData = [
-//         'title' => 'Weekly Tech Update - AI Innovations',
-//         'summary' => 'Discover the latest breakthroughs in artificial intelligence and how they\'re shaping our future. This week we cover new developments in machine learning, robotics, and more.',
-//         'content' => '
-//             <h2>🚀 This Week\'s Highlights</h2>
-//             <p>Hello there! Welcome to another exciting edition of our weekly newsletter. This week, we\'re diving deep into the fascinating world of artificial intelligence and its revolutionary impact on various industries.</p>
-            
-//             <h3>🧠 AI Breakthrough: GPT-4 Vision</h3>
-//             <p>OpenAI has released GPT-4 Vision, a groundbreaking multimodal AI that can understand and analyze images alongside text. This development opens up incredible possibilities for content creation, medical diagnosis, education, and accessibility.</p>
-            
-//             <ul>
-//                 <li><strong>Content Creation:</strong> Automatic image descriptions and alt-text generation</li>
-//                 <li><strong>Medical Diagnosis:</strong> AI-assisted analysis of medical imagery</li>
-//                 <li><strong>Education:</strong> Interactive learning with visual content understanding</li>
-//                 <li><strong>Accessibility:</strong> Better tools for visually impaired users</li>
-//             </ul>
-            
-//             <h3>💼 Industry Spotlight: AI in Healthcare</h3>
-//             <p>The healthcare industry is experiencing a revolutionary transformation thanks to artificial intelligence. From diagnostic imaging to drug discovery, AI is making healthcare more accurate, efficient, and accessible.</p>
-//         ',
-//         'newsletter_type' => 'weekly',
-//         'featured_image' => 'https://via.placeholder.com/600x250/667eea/ffffff?text=Featured+Image'
-//     ];
-
-//     $subscriber = (object) [
-//         'name' => 'Test User',
-//         'email' => 'naief.moatamen@etu.univ-mosta.dz',
-//         'unsubscribe_token' => 'demo-token',
-//         'preferences_token' => 'demo-token'
-//     ];
-
-//     // Actually send the email
-//     Mail::to('naief.moatamen@etu.univ-mosta.dz')->send(new \App\Mail\NewsletterEmail($newsletterData, $subscriber));
-
-//     return 'Test newsletter email sent successfully to: motx98990@gmail.com';
-// })->name('send.test.newsletter.email');
-
-
+// Preview newsletter success email template
+Route::get('/preview/newsletter-success', function(){
+    return view('mail.newsletter-sent-succesfuly', [
+        'newsletter' => (object)[
+            'title' => 'Weekly Tech Digest - Successfully Sent',
+            'sent_at' => now(),
+            'newsletter_type' => 'Weekly',
+            'catagorie' => 'Technology'
+        ],
+        'author' => (object)[
+            'name' => 'Tech Expert',
+            'id' => 1
+        ],
+        'stats' => [
+            'total_recipients' => 1250,
+            'sent_successfully' => 1237,
+            'failed_deliveries' => 13
+        ]
+    ]);
+})->name('preview.newsletter.success');
+//send it
+Route::get('/test-send-newsletter', function(){
+    try {
+        Mail::send('mail.newsletter-email', [
+            'newsletter' => (object)[
+                'title' => 'Weekly Tech Digest - Test Email',
+                'content' => '<h2>Latest Tech Insights</h2>
+                <p>Welcome to this week\'s edition of TechExpo Newsletter! We\'ve curated the most exciting developments in technology and science just for you.</p>
+                
+                <h3>This Week\'s Highlights</h3>
+                <ul>
+                    <li>Revolutionary AI breakthroughs changing the industry</li>
+                    <li>New sustainable tech innovations</li>
+                    <li>Latest developments in quantum computing</li>
+                    <li>Emerging trends in cybersecurity</li>
+                </ul>
+                
+                <p>Stay ahead of the curve with our expertly curated content, designed to keep you informed about the rapidly evolving world of technology.</p>',
+                'created_at' => now(),
+                'newsletter_type' => 'Weekly',
+                'featured_image' => 'default-newsletter.jpg',
+                'catagorie' => 'technology'
+            ],
+            'author' => (object)[
+                'name' => 'Tech Expert',
+                'id' => 1,
+                'userProfile' => (object)[
+                    'profile_photo' => 'default-avatar.jpg',
+                    'title' => 'Technology Writer & Expert',
+                    'bio' => 'Passionate about technology and innovation, bringing you the latest insights from the tech world.'
+                ]
+            ]
+        ], function($message) {
+            $message->to('motx98990@gmail.com', 'Test Recipient')
+                   ->subject('TechExpo Newsletter - Test Email')
+                   ->from(config('mail.from.address'), config('mail.from.name'));
+        });
+        
+        return 'Test newsletter email sent successfully to motx98990@gmail.com!';
+    } catch (Exception $e) {
+        return 'Error sending email: ' . $e->getMessage();
+    }
+})->name('test.newsletter.send');
 
 
 
@@ -148,9 +169,17 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
     Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
 
+    // Newsletter preview route
+    Route::get('/newsletter/{id}/preview', [NewsLetterController::class, 'preview'])->name('newsletter.preview');
+
+    // Newsletter send route
+    Route::post('/newsletter/{id}/send', [NewsLetterController::class, 'sendNewsletter'])->name('newsletter.send');
+
     // Author profile management routes
     Route::post('/profile/author/update', [ProfilesController::class, 'updateAuthorProfile'])->name('author.profile.update');
     Route::delete('/profile/author/delete', [ProfilesController::class, 'deleteAuthorProfile'])->name('author.profile.delete');
+
+
 });
 
 //route for the profile.show for author
@@ -243,4 +272,142 @@ Route::get('/contact', [ContactController::class, 'create'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.submit'); //for when submeted
 //about us route
 Route::get('/about', function () { return view('about_us.about_us'); })->name('about');
+
+// Test queue functionality
+Route::get('/test-queue', function(){
+    try {
+        $newsletter = \App\Models\Newsletter::first();
+        
+        if (!$newsletter) {
+            return 'No newsletter found in database. Please create a newsletter first.';
+        }
+        
+        // Test basic job dispatch
+        \App\Jobs\SendNewsletterJob::dispatch($newsletter);
+        
+        return 'Newsletter job dispatched! Check queue worker output. Newsletter ID: ' . $newsletter->id;
+    } catch (Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+
+// Test individual subscriber job
+Route::get('/test-subscriber-job', function(){
+    try {
+        $newsletter = \App\Models\Newsletter::first();
+        
+        if (!$newsletter) {
+            return 'No newsletter found in database.';
+        }
+        
+        $author = $newsletter->author->user ?? (object)['name' => 'Test Author', 'email' => 'author@test.com'];
+        $subscriber = (object)['email' => 'motx98990@gmail.com', 'name' => 'Test Subscriber'];
+        
+        \App\Jobs\SendNewsletterToSubscriberJob::dispatch($newsletter, $subscriber, $author);
+        
+        return 'Subscriber job dispatched! Check queue worker output.';
+    } catch (Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+
+// Monitor queue status
+Route::get('/queue-status', function(){
+    $pending = DB::table('jobs')->count();
+    $failed = DB::table('failed_jobs')->count();
+    $processing = DB::table('jobs')->where('reserved_at', '!=', null)->count();
+    
+    return response()->json([
+        'pending_jobs' => $pending,
+        'failed_jobs' => $failed,
+        'processing_jobs' => $processing,
+        'status' => $pending > 0 ? 'Jobs pending' : 'Queue empty',
+        'recommendations' => [
+            'Make sure queue worker is running: php artisan queue:work',
+            'Check failed jobs: php artisan queue:failed',
+            'Monitor logs: tail -f storage/logs/laravel.log'
+        ]
+    ]);
+});
+
+// Test mailable directly (without queue)
+Route::get('/test-mailable', function(){
+    try {
+        $newsletter = \App\Models\Newsletter::first() ?? (object)[
+            'title' => 'Test Newsletter',
+            'content' => '<h2>Test Content</h2><p>This is a test.</p>',
+            'catagorie' => 'technology',
+            'newsletter_type' => 'Weekly',
+            'created_at' => now(),
+            'featured_image' => 'default-newsletter.jpg'
+        ];
+        
+        $author = (object)[
+            'name' => 'Test Author',
+            'id' => 1,
+            'userProfile' => (object)[
+                'profile_photo' => 'default-avatar.jpg',
+                'title' => 'Test Title',
+                'bio' => 'Test bio'
+            ]
+        ];
+        
+        Mail::to('motx98990@gmail.com')
+            ->send(new \App\Mail\NewsletterEmail($newsletter, $author));
+        
+        return 'Mailable sent directly (no queue)!';
+    } catch (Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+// Test queue functionality with logging
+Route::get('/test-queue-with-logging', function(){
+    try {
+        $newsletter = \App\Models\Newsletter::first();
+        
+        if (!$newsletter) {
+            return 'No newsletter found in database.';
+        }
+        
+        Log::info('About to dispatch newsletter job', ['newsletter_id' => $newsletter->id]);
+        
+        \App\Jobs\SendNewsletterJob::dispatch($newsletter);
+        
+        Log::info('Newsletter job dispatched successfully', ['newsletter_id' => $newsletter->id]);
+        
+        // Check if job was actually created
+        $jobCount = DB::table('jobs')->count();
+        
+        return "Job dispatched! Newsletter ID: {$newsletter->id}. Jobs in queue: {$jobCount}";
+        
+    } catch (Exception $e) {
+        Log::error('Failed to dispatch newsletter job', ['error' => $e->getMessage()]);
+        return 'Error: ' . $e->getMessage();
+    }
+});
+// Add this route after your existing queue routes
+Route::get('/queue-monitor', function(){
+    $pending = DB::table('jobs')->count();
+    $failed = DB::table('failed_jobs')->count();
+    $processing = DB::table('jobs')->where('reserved_at', '!=', null)->count();
+    
+    $recentJobs = DB::table('jobs')
+        ->select('queue', 'payload', 'created_at')
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
+        ->get();
+    
+    $failedJobs = DB::table('failed_jobs')
+        ->select('connection', 'queue', 'exception', 'failed_at')
+        ->orderBy('failed_at', 'desc')
+        ->limit(5)
+        ->get();
+    
+    return view('queue-monitor', compact('pending', 'failed', 'processing', 'recentJobs', 'failedJobs'));
+})->name('queue.monitor');
+
+Route::get('/test-simple-job', function(){
+    \App\Jobs\TestJob::dispatch();
+    return 'Simple test job dispatched!';
+});
 

@@ -14,7 +14,7 @@ return [
     |
     */
     'tinymce' => [
-        'api_key' => env('TINYMCE_API_KEY',''),
+        'api_key' => env('TINYMCE_API_KEY','6lb6rmf3l7x2ptsbl1vqf7cbtqx5nb767e3e77liuxnw2pn8'),
     ],
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),

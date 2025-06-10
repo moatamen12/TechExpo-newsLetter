@@ -10,16 +10,16 @@
                     <img src="{{ asset('storage/' . $author->userProfile->profile_photo) }}" 
                          alt="{{ $author->name }}'s profile photo" 
                          class="img-fluid w-100 h-100" 
-                         style="object-fit: cover; min-height: 300px;"> {{-- Ensures image covers the area and has a min-height --}}
+                         style="object-fit: cover; height: 300px; max-height: 300px;"> {{-- Limited height with max-height --}}
                 @else
                     {{-- Fallback if no profile photo is available --}}
-                    <div class="d-flex align-items-center justify-content-center bg-light w-100 h-100" style="min-height: 300px;">
+                    <div class="d-flex align-items-center justify-content-center bg-light w-100" style="height: 300px;">
                         <span class="text-muted">No Photo</span>
                     </div>
                 @endif
             </div>
             <div class="col-md-8"> {{-- Adjusted column size for content --}}
-                <div class="card-body p-4"> {{-- Added more padding to card-body --}}
+                <div class="card-body p-4 position-relative" style="min-height: 300px;"> {{-- Added position-relative and min-height --}}
                     <h4>{{ $author->name }}</h4>
                     @if($author->userProfile && $author->userProfile->title)
                         <p class="text-muted">{{ $author->userProfile->title }}</p>
@@ -31,25 +31,6 @@
                     
                     <h5 class="mt-3">Bio</h5>
                     <p>{{ $author->userProfile->bio ?? 'No bio provided.' }}</p>
-
-                    {{-- Social Media Links --}}
-                    @if($author->userProfile && ($author->userProfile->social_twitter || $author->userProfile->social_linkedin || $author->userProfile->social_github || $author->userProfile->social_website))
-                        <h5 class="mt-3">Connect</h5>
-                        <p>
-                            @if($author->userProfile->social_twitter)
-                                <a href="{{ $author->userProfile->social_twitter }}" target="_blank" class="btn btn-outline-info btn-sm me-2"><i class="fab fa-twitter"></i> Twitter</a>
-                            @endif
-                            @if($author->userProfile->social_linkedin)
-                                <a href="{{ $author->userProfile->social_linkedin }}" target="_blank" class="btn btn-outline-primary btn-sm me-2"><i class="fab fa-linkedin"></i> LinkedIn</a>
-                            @endif
-                            @if($author->userProfile->social_github)
-                                <a href="{{ $author->userProfile->social_github }}" target="_blank" class="btn btn-outline-secondary btn-sm me-2"><i class="fab fa-github"></i> GitHub</a>
-                            @endif
-                            @if($author->userProfile->social_website)
-                                <a href="{{ $author->userProfile->social_website }}" target="_blank" class="btn btn-outline-dark btn-sm"><i class="fas fa-globe"></i> Website</a>
-                            @endif
-                        </p>
-                    @endif
 
                     @auth {{-- Only show if user is logged in --}}
                         @if(auth()->user()->id !== $author->id) {{-- Don't show follow for own profile --}}
@@ -71,6 +52,25 @@
                     @guest
                         <a href="{{ route('login') }}" class="btn btn-primary mt-3">Login to Follow</a>
                     @endguest
+
+                    {{-- Social Media Links - Positioned at bottom right --}}
+                    @if($author->userProfile && $author->userProfile->activeSocialLinks->count() > 0)
+                        <div class="position-absolute bottom-0 end-0 p-3">
+                            <div class="d-flex flex-column align-items-end">
+                                {{-- <small class="text-muted mb-2">Connect:</small> --}}
+                                <div class="d-flex flex-wrap justify-content-end gap-2">
+                                    @foreach($author->userProfile->activeSocialLinks as $socialLink)
+                                        <a href="{{ $socialLink->url }}" target="_blank" 
+                                           class="btn secondary-btn btn-sm" 
+                                           title="{{ ucfirst($socialLink->platform) }}"
+                                           style="color: {{ $socialLink->platform_color ?? '#6c757d' }}; border-color: {{ $socialLink->platform_color ?? '#6c757d' }};">
+                                            <i class="{{ $socialLink->platform_icon ?? 'fas fa-link' }}"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -99,5 +99,15 @@
             <p>{{ $author->name }} has not published any articles yet.</p>
         @endif
     </div>
+
+    {{-- Remove or comment out the debug section --}}
+    {{-- Debug: Check what social data is available
+    @if($author->userProfile)
+        @dump($author->userProfile->social_twitter)
+        @dump($author->userProfile->social_linkedin)
+        @dump($author->userProfile->social_github)
+        @dump($author->userProfile->social_website)
+        @dump($author->userProfile->activeSocialLinks)
+    @endif --}}
 </div>
 @endsection

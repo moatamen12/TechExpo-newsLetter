@@ -28,7 +28,7 @@
                         <span class="ms-2 small">
                             <a href="{{ route('profile.show', $article->author->profile_id) }}" 
                                 class="text-reset btn-link fw-bold position-relative stretched-link"
-                                style="z-index: 1000;">
+                                style="z-index: 100;">
                                 @if ($article->author && $article->author->user)
                                     {{ $article->author->user->name }}
                                 @endif

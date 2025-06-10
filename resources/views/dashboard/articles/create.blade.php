@@ -127,7 +127,7 @@
 
 @push('scripts')
     {{-- 1. Load TinyMCE library --}}
-    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/6lb6rmf3l7x2ptsbl1vqf7cbtqx5nb767e3e77liuxnw2pn8/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     
     {{-- 2. Define window.tinyMCEUploadConfig BEFORE TinyMCE_init.js --}}
     <script>
