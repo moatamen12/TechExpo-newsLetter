@@ -38,7 +38,7 @@
     @endif
 
     <!-- Contact form - only shown for logged in users -->
-    <div class="row g-4 p-5">
+    <div class="row g-4 p-lg-5 p-sm-1">
         <!-- Form Column -->
         <div class="col-lg-12 mb-4">
             <div class="card border-0 rounded-3 shadow-sm">

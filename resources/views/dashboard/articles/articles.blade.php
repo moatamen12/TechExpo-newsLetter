@@ -7,6 +7,12 @@
         'text' => '<span><i class="fa-regular fa-pen-to-square" style="color: #ffffff;"></i> New Content</span>'
     ];
     $dashboardTabs=[
+        'all' => [
+            'activeTab' => 'all',
+            'id' => 'all-tab',
+            'ariaControls' => 'allContent',
+            'txt' => 'All Articles'
+        ],
         'published' => [
             'activeTab' => 'published',
             'id' => 'published-tab',
@@ -26,7 +32,7 @@
         //     'txt' => 'Scedueld'
         // ],
     ];
-    $activeTab = 'published'; // This should match the tab you want active by default
+    $activeTab = 'all'; // This should match the tab you want active by default
 @endphp
 
 
@@ -56,12 +62,24 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
         <x-taps :taps="$dashboardTabs" :activeTab="$activeTab" />
         {{-- search --}}
-        <div class="w-50 d-flex justify-content-end login-bg rounded-5">
+        <div class="w-50 d-flex justify-content-end bg-white shadow-sm rounded-5">
             <x-sub_header/>
         </div>
     </div>  
     
     <div class="tab-content" id="pills-tabContent">
+
+        <div class="tab-pane fade {{ $activeTab == 'all' ? 'show active' : '' }}" 
+        id="allContent" role="tabpanel" 
+        aria-labelledby="all-tab" tabindex="0">
+
+            <div class="card border-ligt p-2">
+                <h5 class="card-title fw-bold m-2">All Articles</h5>
+                <div class="card-body mt-2">
+                    <x-dashboard-table :vars="$allArticles" tableID="all-articles-table"/>
+                </div>
+            </div>
+        </div>
 
         <div class="tab-pane fade {{ $activeTab == 'published' ? 'show active' : '' }}" 
         id="publishedContent" role="tabpanel" 

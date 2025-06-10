@@ -145,7 +145,7 @@
 </script>
 
 {{-- <script src="{{asset('assets/js/like.js')}}"></script> for the like btn --}}
-<script src="{{ asset('assets/js/follow_unfollow.js') }}"></script>
+<script src="{{ asset('assets/js/reader_interactions.js') }}"></script>
 @stack('scripts') {{-- Make sure this line exists --}}
 
 </body>

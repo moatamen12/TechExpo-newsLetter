@@ -123,7 +123,7 @@ class ArticlesController extends Controller
         $rules = [
             'title' => 'required|min:10|max:100',
             'content' => 'required',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webP|max:2048', // 2MB Max
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // 2MB Max
             'status' => 'required|in:published,draft,scheduled',
             'summary' => 'required|max:300|min:30',
             'category_id' => 'required|exists:categories,category_id', 

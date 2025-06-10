@@ -87,9 +87,8 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
 
 
     //for the newsletter management
-    Route::get('/dashboard/newsletter',[newsletterController::class,'create'])->name('newsletter.create'); //create newsletter
-    
-
+    Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
+    Route::get('/newsletters/{id}', [NewsLetterController::class, 'show'])->name('newsletters.show');//show a newsletter by id
 
 
 });
@@ -131,7 +130,3 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.subm
 //about us route
 Route::get('/about', function () { return view('about_us.about_us'); })->name('about');
 
-// stats route
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard/stats', [App\Http\Controllers\StatsController::class, 'index'])->name('dashboard.stats');
-});

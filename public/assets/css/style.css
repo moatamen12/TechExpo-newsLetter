@@ -68,6 +68,8 @@ a{
     height: 50px;
     object-fit: cover;
 }
+
+/* Updated avatar-letter for backwards compatibility */
 .avatar-letter{
     width: 50px;
     height: 50px;
@@ -76,6 +78,81 @@ a{
     background-color: var(--secoundary-bg) !important;
     color: var(--primary-text) !important;
 }
+
+/* New user avatar logo styles */
+.user-avatar-logo {
+    background-color: var(--btn-secondary-hover) !important;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.user-avatar-logo:hover {
+    background-color: var(--btn-hover) !important;
+    transform: scale(1.05);
+}
+
+.logo-avatar-text {
+    color: var(--btn-color) !important;
+    font-weight: bold;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+/* Responsive font sizes based on avatar size */
+.user-avatar-logo[style*="width: 30px"] .logo-avatar-text {
+    font-size: 10px;
+}
+
+.user-avatar-logo[style*="width: 40px"] .logo-avatar-text {
+    font-size: 12px;
+}
+
+.user-avatar-logo[style*="width: 50px"] .logo-avatar-text {
+    font-size: 14px;
+}
+
+.user-avatar-logo[style*="width: 60px"] .logo-avatar-text {
+    font-size: 16px;
+}
+
+.user-avatar-logo[style*="width: 80px"] .logo-avatar-text {
+    font-size: 18px;
+}
+
+/* Interactive avatar styles */
+.user-avatar-logo.interactive {
+    cursor: pointer;
+}
+
+.user-avatar-logo.interactive:hover .logo-avatar-text {
+    color: white !important;
+}
+
+/* Profile image styles - also remove border */
+.avatar-img {
+    object-fit: cover;
+    box-sizing: border-box;
+}
+
+.avatar-img.interactive {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-img.interactive:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Remove button styling conflicts */
+.btn-link:hover .user-avatar-logo,
+.btn-link:focus .user-avatar-logo,
+.btn-link:hover .avatar-img,
+.btn-link:focus .avatar-img {
+    text-decoration: none;
+}
+
 .nav-pills .nav-link.active{
     box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important;
     /* background-color: var(--btn-hover) !important; */

@@ -53,9 +53,21 @@ class DashboardController extends Controller
 
         $published = $this->publishedArticles($profile_id);
         $draft = $this->draftArticles($profile_id);
+        
+        // Add allArticles that combines both published and draft
+        $allArticles = Article::with(['author.user', 'categorie'])
+            ->where('author_id', $profile_id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        if ($request) {
+            $allArticles->appends($request->query());
+        }
+        
         return view('dashboard.articles.articles', [
             'published' => $published,
             'draft' => $draft,
+            'allArticles' => $allArticles,
         ]);
     } 
 
@@ -65,7 +77,7 @@ class DashboardController extends Controller
         $user = Auth::id();  
         $profile_id = UserProfiles::where('user_id', $user)->first()->profile_id;
 
-        $user=UserProfiles::Select('*')
+        $user = UserProfiles::Select('*')
             ->with('user')
             ->where('profile_id', $profile_id)
             ->first();
@@ -75,6 +87,12 @@ class DashboardController extends Controller
         $totalLikes = Article::where('author_id', $profile_id)->sum('like_count');
         $totalcomment = Article::where('author_id', $profile_id)->sum('comment_count');
 
+        // Get percentage changes
+        $articlesChange = $this->getArticlePercentageChange($profile_id);
+        $viewsChange = $this->getViewsPercentageChange($profile_id);
+        $followersChange = $this->getFollowersPercentageChange($profile_id);
+        $reactionsChange = $this->getReactionsPercentageChange($profile_id);
+
         return [
             'totalArticles' => $totalArticles,
             'totalViews' => $totalViews,
@@ -82,6 +100,15 @@ class DashboardController extends Controller
             'totalComments' => $totalcomment,
             'userName' => $user->user->name ?? 'User',
             'userEmail' => $user->user->email ?? '',
+            // Add percentage data
+            'articlesPercentage' => $articlesChange['percentage'],
+            'articlesDirection' => $articlesChange['direction'],
+            'viewsPercentage' => $viewsChange['percentage'],
+            'viewsDirection' => $viewsChange['direction'],
+            'followersPercentage' => $followersChange['percentage'],
+            'followersDirection' => $followersChange['direction'],
+            'reactionsPercentage' => $reactionsChange['percentage'],
+            'reactionsDirection' => $reactionsChange['direction'],
         ];
     }
 
@@ -138,7 +165,7 @@ class DashboardController extends Controller
                      ->where('author_id', $authorId)
                      ->where('status', 'published')
                      ->orderBy('view_count', 'desc')
-                     ->take(5)
+                     ->take(10)
                      ->get()
                      ->map(function($article) {
                          return [
@@ -369,5 +396,99 @@ class DashboardController extends Controller
         
         // Sort by created_at and take latest 5
         return $activities->sortByDesc('created_at')->take(5)->values();
+    }
+
+    private function getArticlePercentageChange($authorId)
+    {
+        $currentMonth = Article::where('author_id', $authorId)
+                          ->whereMonth('created_at', now()->month)
+                          ->whereYear('created_at', now()->year)
+                          ->count();
+    
+        $lastMonth = Article::where('author_id', $authorId)
+                       ->whereMonth('created_at', now()->subMonth()->month)
+                       ->whereYear('created_at', now()->subMonth()->year)
+                       ->count();
+    
+        return $this->calculatePercentageChange($currentMonth, $lastMonth);
+    }
+
+    private function getViewsPercentageChange($authorId)
+    {
+        $currentMonth = Article::where('author_id', $authorId)
+                          ->whereMonth('created_at', now()->month)
+                          ->whereYear('created_at', now()->year)
+                          ->sum('view_count');
+    
+        $lastMonth = Article::where('author_id', $authorId)
+                       ->whereMonth('created_at', now()->subMonth()->month)
+                       ->whereYear('created_at', now()->subMonth()->year)
+                       ->sum('view_count');
+    
+        return $this->calculatePercentageChange($currentMonth, $lastMonth);
+    }
+
+    private function getFollowersPercentageChange($authorId)
+    {
+        try {
+            $currentMonth = userFollower::where('following_id', $authorId)
+                                  ->whereMonth('created_at', now()->month)
+                                  ->whereYear('created_at', now()->year)
+                                  ->count();
+        
+            $lastMonth = userFollower::where('following_id', $authorId)
+                                ->whereMonth('created_at', now()->subMonth()->month)
+                                ->whereYear('created_at', now()->subMonth()->year)
+                                ->count();
+        
+            return $this->calculatePercentageChange($currentMonth, $lastMonth);
+        } catch (\Exception $e) {
+            return ['percentage' => 0, 'direction' => 'neutral'];
+        }
+    }
+
+    private function getReactionsPercentageChange($authorId)
+    {
+        $currentMonthLikes = Article::where('author_id', $authorId)
+                               ->whereMonth('created_at', now()->month)
+                               ->whereYear('created_at', now()->year)
+                               ->sum('like_count');
+    
+        $currentMonthComments = Article::where('author_id', $authorId)
+                                  ->whereMonth('created_at', now()->month)
+                                  ->whereYear('created_at', now()->year)
+                                  ->sum('comment_count');
+    
+        $lastMonthLikes = Article::where('author_id', $authorId)
+                            ->whereMonth('created_at', now()->subMonth()->month)
+                            ->whereYear('created_at', now()->subMonth()->year)
+                            ->sum('like_count');
+    
+        $lastMonthComments = Article::where('author_id', $authorId)
+                               ->whereMonth('created_at', now()->subMonth()->month)
+                               ->whereYear('created_at', now()->subMonth()->year)
+                               ->sum('comment_count');
+    
+        $currentTotal = $currentMonthLikes + $currentMonthComments;
+        $lastTotal = $lastMonthLikes + $lastMonthComments;
+    
+        return $this->calculatePercentageChange($currentTotal, $lastTotal);
+    }
+
+    private function calculatePercentageChange($current, $previous)
+    {
+        if ($previous == 0) {
+            if ($current > 0) {
+                return ['percentage' => 100, 'direction' => 'up'];
+            }
+            return ['percentage' => 0, 'direction' => 'neutral'];
+        }
+    
+        $percentageChange = (($current - $previous) / $previous) * 100;
+    
+        return [
+            'percentage' => abs($percentageChange),
+            'direction' => $percentageChange > 0 ? 'up' : ($percentageChange < 0 ? 'down' : 'neutral')
+        ];
     }
 }

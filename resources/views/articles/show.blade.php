@@ -162,7 +162,7 @@
                     <footer class="text-muted text-start mt-2">Be respectful and constructive in your feedback(1000 char max)</footer>
 
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-subscribe">Post Comment</button>
+                        <button type="submit" class="btn btn-subscribe">Comment</button>
                     </div>
                 </form>
             </div>

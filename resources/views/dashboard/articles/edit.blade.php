@@ -66,7 +66,7 @@
                     <div class="col-md-6 col-sm-12 mb-3">
                         <label for="featured_image" class="form-label fw-bold">Featured Image</label>
                         <input class="form-control" type="file" id="featured_image" name="featured_image">
-                        <small class="text-muted">Recommended size: 1200x800px</small>
+                        <small class="text-muted">Recommended size: 1200x800px, and of type webp</small>
                         <div class="mt-2 preview-container @if(!$article->featured_image_url) d-none @endif">
                             <img id="image-preview" class="img-fluid rounded" src="{{ $article->featured_image_url ? asset('storage/' . $article->featured_image_url) : '#' }}" alt="Preview">
                             <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="remove-preview-image">
