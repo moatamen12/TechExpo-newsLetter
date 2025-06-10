@@ -2,8 +2,9 @@
 
 @section('title', 'Analytics & Stats')
 @push('styles')
-    <link href="{{ asset('assets/css/stats-dashboard.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/state_style.css') }}" rel="stylesheet">
 @endpush
+
 @section('content')
 <div class="container-fluid p-4">
     <!-- Header -->
@@ -57,7 +58,11 @@
                                 <tr class="border-bottom">
                                     <td class="py-3">
                                         <div>
-                                            <strong class="d-block text-dark">{{ $article['title'] }}</strong>
+                                            <a href="{{route('articles.show',$article['article_id'])}}"
+                                               class="text-reset btn-link stretched-link fw-bold position-relative"
+                                               style="z-index: 1000;">
+                                                <strong class="d-block text-dark">{{ $article['title'] }}</strong>
+                                            </a>
                                             <small class="text-muted">{{ $article['date'] }}</small>
                                         </div>
                                     </td>
@@ -125,118 +130,21 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ asset('assets/js/dashboard-charts.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Monthly Performance Chart
-    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-    new Chart(monthlyCtx, {
-        type: 'line',
-        data: {
-            labels: @json($monthlyData['months']),
-            datasets: [{
-                label: 'Views',
-                data: @json($monthlyData['views']),
-                borderColor: '#20c997',
-                backgroundColor: 'rgba(32, 201, 151, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f8f9fa'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // Audience Growth Chart
-    const audienceCtx = document.getElementById('audienceChart').getContext('2d');
-    new Chart(audienceCtx, {
-        type: 'line',
-        data: {
-            labels: @json($audienceGrowth['months']),
-            datasets: [{
-                label: 'Users',
-                data: @json($audienceGrowth['users']),
-                borderColor: '#17a2b8',
-                backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f8f9fa'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // Category Pie Chart
-    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-    const categoryData = @json($categoryStats);
-    const colors = ['#20c997', '#17a2b8', '#6f42c1', '#fd7e14', '#ffc107'];
-    
-    new Chart(categoryCtx, {
-        type: 'doughnut',
-        data: {
-            labels: categoryData.map(item => item.name),
-            datasets: [{
-                data: categoryData.map(item => item.percentage),
-                backgroundColor: colors.slice(0, categoryData.length),
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            cutout: '60%'
-        }
-    });
+    // Initialize stats charts
+    if (window.dashboardCharts) {
+        window.dashboardCharts.initStatsCharts({
+            monthlyData: @json($monthlyData ?? []),
+            audienceGrowth: @json($audienceGrowth ?? []),
+            categoryStats: @json($categoryStats ?? [])
+        });
+    }
 });
 </script>
 @endpush
-@endsection

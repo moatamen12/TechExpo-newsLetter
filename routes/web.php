@@ -101,10 +101,7 @@ Route::get('/profile',[ProfilesController::class,'index'])
                       ->name('profile');
 
 //route for the profile.show for author
-Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])
-    ->middleware('auth')
-    ->can('accessProfile')
-    ->name('profile.show');
+Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])->name('profile.show');
     
 
 //reader profile

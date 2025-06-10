@@ -6,24 +6,36 @@ use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\User;
 use App\Models\Categorie;
+use App\Models\UserProfiles;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class StatsController extends Controller
 {
     public function index()
     {
-        // Monthly Performance Data (last 6 months)
-        $monthlyData = $this->getMonthlyPerformance();
+        // Get the authenticated user's profile
+        $user = Auth::user();
+        $userProfile = UserProfiles::where('user_id', $user->user_id)->first();
         
-        // Audience Growth Data (last 6 months)
+        if (!$userProfile) {
+            return redirect()->route('dashboard')->with('error', 'Author profile not found.');
+        }
+        
+        $authorId = $userProfile->profile_id;
+        
+        // Monthly Performance Data (last 6 months) - filtered by author
+        $monthlyData = $this->getMonthlyPerformance($authorId);
+        
+        // Audience Growth Data (last 6 months) - this might still be global or author-specific
         $audienceGrowth = $this->getAudienceGrowth();
         
-        // Top Performing Articles
-        $topArticles = $this->getTopPerformingArticles();
+        // Top Performing Articles - filtered by author
+        $topArticles = $this->getTopPerformingArticles($authorId);
         
-        // Content Categories Distribution
-        $categoryStats = $this->getCategoryStats();
+        // Content Categories Distribution - filtered by author
+        $categoryStats = $this->getCategoryStats($authorId);
         
         return view('dashboard.stats', compact(
             'monthlyData',
@@ -33,7 +45,7 @@ class StatsController extends Controller
         ));
     }
     
-    private function getMonthlyPerformance()
+    private function getMonthlyPerformance($authorId)
     {
         $months = [];
         $views = [];
@@ -43,13 +55,14 @@ class StatsController extends Controller
             $monthName = $date->format('M');
             $months[] = $monthName;
             
-            // Get views for articles published in this month
-            $monthlyViews = Article::whereMonth('created_at', $date->month)
+            // Get views for articles published by this author in this month
+            $monthlyViews = Article::where('author_id', $authorId)
+                                 ->whereMonth('created_at', $date->month)
                                  ->whereYear('created_at', $date->year)
+                                 ->where('status', 'published')
                                  ->sum('view_count');
             
-            // If no real data, use sample data
-            $views[] = $monthlyViews > 0 ? $monthlyViews : rand(5000, 25000);
+            $views[] = $monthlyViews;
         }
         
         return [
@@ -71,7 +84,7 @@ class StatsController extends Controller
             // Get cumulative user count up to this month
             $userCount = User::where('created_at', '<=', $date->endOfMonth())
                            ->count();
-            $users[] = $userCount > 0 ? $userCount : rand(800, 1200);
+            $users[] = $userCount;
         }
         
         return [
@@ -80,35 +93,51 @@ class StatsController extends Controller
         ];
     }
     
-    private function getTopPerformingArticles()
+    private function getTopPerformingArticles($authorId)
     {
-        return Article::with(['author.user', 'categorie']) // Fixed: using author.user relationship
+        $TopPerformingArticles = Article::with(['author.user', 'categorie'])
+                     ->where('author_id', $authorId)
                      ->where('status', 'published')
                      ->orderBy('view_count', 'desc')
                      ->take(5)
                      ->get()
                      ->map(function($article) {
                          return [
+                             'article_id' => $article->article_id, // Add this line
                              'title' => $article->title,
-                             'author' => $article->author->user->name ?? 'Unknown', // Fixed: using author.user
+                             'author' => $article->author->user->name ?? 'Unknown',
                              'date' => $article->created_at->format('M j, Y'),
-                             'views' => $article->view_count ?? rand(1000, 8000),
-                                 'likes' => $article->like_count ?? rand(50, 500),
-                                 'comments' => $article->comment_count ?? rand(10, 150)
-                             ];
-                         });
+                             'views' => $article->view_count ?? 0,
+                             'likes' => $article->like_count ?? 0,
+                             'comments' => $article->comment_count ?? 0
+                         ];
+                     });
+        // dd($TopPerformingArticles);
+        return $TopPerformingArticles;
+                     
     }
     
-    private function getCategoryStats()
+    private function getCategoryStats($authorId)
     {
-        $categories = Categorie::with('articles')
+        // Get categories that have articles by this author
+        $categories = Categorie::whereHas('articles', function($query) use ($authorId) {
+                                $query->where('author_id', $authorId)
+                                      ->where('status', 'published');
+                            })
+                            ->with(['articles' => function($query) use ($authorId) {
+                                $query->where('author_id', $authorId)
+                                      ->where('status', 'published');
+                            }])
                             ->get()
-                            ->map(function($category) {
-                                $count = $category->articles()->where('status', 'published')->count();
+                            ->map(function($category) use ($authorId) {
+                                $count = $category->articles()
+                                                 ->where('author_id', $authorId)
+                                                 ->where('status', 'published')
+                                                 ->count();
                                 return [
                                     'name' => $category->name,
                                     'count' => $count,
-                                    'percentage' => 0 // Will calculate after getting total
+                                    'percentage' => 0
                                 ];
                             })
                             ->filter(function($item) {
@@ -122,16 +151,6 @@ class StatsController extends Controller
                 $item['percentage'] = round(($item['count'] / $total) * 100);
                 return $item;
             });
-        }
-        
-        // If no real data, create sample data
-        if ($categories->isEmpty()) {
-            $categories = collect([
-                ['name' => 'Web Development', 'count' => 12, 'percentage' => 43],
-                ['name' => 'JavaScript', 'count' => 8, 'percentage' => 29],
-                ['name' => 'CSS', 'count' => 5, 'percentage' => 18],
-                ['name' => 'React', 'count' => 3, 'percentage' => 10]
-            ]);
         }
         
         return $categories;
