@@ -10,8 +10,10 @@ use App\Models\userFollower;
 use App\Models\Contact;
 use App\Models\ArticleLike; 
 use App\Models\UserProfiles;
+use App\Models\SocialLink; // Add this line for SocialLink model
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -27,9 +29,13 @@ class ProfilesController extends Controller
         if (!$user) {
             return redirect()->route('login')->with('error', 'You must be logged in to view this page.');
         }
-        // Simplified logic: always show readerProfile for now, 
-        // you can add author-specific logic later if needed.
-        return  $this->readerProfile($user);
+        
+        // Check if user has a profile (is an author)
+        if ($user->userProfile) {
+            return $this->authorProfile($user);
+        } else {
+            return $this->readerProfile($user);
+        }
     }
     
     //reader profile
@@ -50,9 +56,6 @@ class ProfilesController extends Controller
         ->paginate(5);
 
         $followedWritersModels = userFollower::getFollowedWriters($user->user_id)->get();
-        // dd($followedWritersModels->profile_id);
-        
-            // dd($followedWritersModels->first()->following_id);
         
         return view('profile.reader_profile', [                
             'user_name' => $user->name,
@@ -60,10 +63,57 @@ class ProfilesController extends Controller
             'savedArticles' => $savedUserArticles, 
             'followedWriters' => $followedWritersModels, // Pass followed writers to the view
             'followers' => userFollower::where('following_id', $user->user_id)->count(),
-            // 'following' => userFollower::where('follower_id', $user->user_id)->count(), // Corrected to user_id
         ]);
     }
 
+    //author profile
+    public function authorProfile(User $user) 
+    {
+        // Get followers of this author
+        $followers = userFollower::with('follower')
+            ->where('following_id', $user->userProfile->profile_id)
+            ->get();
+
+        // Get author's articles
+        $articles = Article::with(['categorie'])
+            ->where('author_id', $user->userProfile->profile_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get author's saved articles
+        $savedArticles = userSavedArticle::with([
+            'article' => function ($query) {
+                $query->with([
+                    'author' => function ($subQuery) {
+                        $subQuery->with('user');
+                    },
+                    'categorie'
+                ]);
+            }
+        ])
+        ->where('user_id', $user->user_id)
+        ->latest('saved_at')
+        ->get();
+
+        // Get users that this author is following
+        $following = userFollower::with(['following' => function($query) {
+            $query->with('user');
+        }])
+        ->where('follower_id', $user->user_id)
+        ->get();
+
+        return view('profile.author_profile', [
+            'user' => $user,
+            'followers' => $followers,
+            'followersCount' => $followers->count(),
+            'articles' => $articles,
+            'articlesCount' => $articles->count(),
+            'savedArticles' => $savedArticles,
+            'savedArticlesCount' => $savedArticles->count(),
+            'following' => $following,
+            'followingCount' => $following->count(),
+        ]);
+    }
 
     public function show($profile_id){
 
@@ -93,8 +143,6 @@ class ProfilesController extends Controller
             'author' => $authorUser, 
             'articles' => $articles,
             'followers' => userFollower::where('following_id', $authorProfile->profile_id)->count(),
-
-            // 'following' => userFollower::where('follower_id', $authorProfile->profile_id)->count(),
         ]);
     }
 
@@ -148,6 +196,180 @@ class ProfilesController extends Controller
         return redirect()->route('profile')->with('success', 'Profile updated successfully!');
     }
 
+    public function updateAuthorProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validation rules - removed 'title' field
+        $rules = [
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+            'name' => ['required', 'string', 'min:2', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->user_id, 'user_id'),
+            ],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'work' => ['nullable', 'string', 'max:255'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'old_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', Password::min(8)->sometimes(), 'confirmed'],
+            'social_links' => ['nullable', 'array'],
+            'social_links.*' => ['nullable', 'url', 'max:255'],
+            'social_active' => ['nullable', 'array'],
+        ];
+
+        $messages = [
+            'new_password.confirmed' => 'The new password confirmation does not match.',
+            'new_password.min' => 'The new password must be at least 8 characters.',
+            'old_password.current_password' => 'The provided old password does not match your current password.',
+        ];
+
+        // Conditionally add password validation
+        if ($request->filled('old_password') || $request->filled('new_password')) {
+            $rules['old_password'] = ['required', 'string', 'current_password'];
+            $rules['new_password'] = ['required', 'string', Password::min(8), 'confirmed'];
+        }
+
+        $validatedData = $request->validate($rules, $messages);
+
+        // Update user basic info
+        $user->name = $validatedData['name'];
+        $user->email = $validatedData['email'];
+
+        // Update password if provided
+        if ($request->filled('new_password') && $request->filled('old_password')) {
+            $user->password = Hash::make($validatedData['new_password']);
+        }
+
+        $user->save();
+
+        // Update user profile - removed title field
+        $profile = $user->userProfile;
+        
+        // Handle profile photo upload
+        if ($request->hasFile('profile_photo')) {
+            // Delete old photo if exists
+            if ($profile->profile_photo && Storage::disk('public')->exists($profile->profile_photo)) {
+                Storage::disk('public')->delete($profile->profile_photo);
+            }
+            
+            // Store new photo
+            $profilePhotoPath = $request->file('profile_photo')->store('profile_photos', 'public');
+            $profile->profile_photo = $profilePhotoPath;
+        }
+
+        // Update profile fields (removed title)
+        $profile->bio = $validatedData['bio'] ?? $profile->bio;
+        $profile->work = $validatedData['work'] ?? $profile->work;
+        $profile->website = $validatedData['website'] ?? $profile->website;
+
+        $profile->save();
+
+        // Handle social links
+        if ($request->has('social_links')) {
+            foreach ($request->social_links as $platform => $url) {
+                if (!empty($url)) {
+                    $isActive = isset($request->social_active[$platform]) ? true : false;
+                    
+                    SocialLink::updateOrCreate(
+                        [
+                            'user_id' => $user->user_id,
+                            'platform' => $platform
+                        ],
+                        [
+                            'url' => $url,
+                            'is_active' => $isActive
+                        ]
+                    );
+                } else {
+                    // Delete if URL is empty
+                    SocialLink::where('user_id', $user->user_id)
+                             ->where('platform', $platform)
+                             ->delete();
+                }
+            }
+        }
+
+        return redirect()->route('profile')->with('success', 'Profile updated successfully!');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        // Base validation rules
+        $rules = [
+            'name' => ['required', 'string', 'min:5','max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->user_id, 'user_id'), // Ignore current user's email
+            ],
+            'old_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', Password::min(8)->sometimes(), 'confirmed'],
+            // new_password_confirmation is handled by 'confirmed' rule on new_password
+        ];
+
+        // Custom validation messages
+        $messages = [
+            'new_password.confirmed' => 'The new password confirmation does not match.',
+            'new_password.min' => 'The new password must be at least 8 characters.',
+            'old_password.current_password' => 'The provided old password does not match your current password.',
+        ];
+
+        // Conditionally add password validation if old_password is provided
+        if ($request->filled('old_password') || $request->filled('new_password')) {
+            $rules['old_password'] = ['required', 'string', 'current_password']; // Uses Laravel's built-in current_password rule
+            $rules['new_password'] = ['required', 'string', Password::min(8), 'confirmed'];
+        }
+
+        $validatedData = $request->validate($rules, $messages);
+
+        // Update name and email
+        $user->name = $validatedData['name'];
+        $user->email = $validatedData['email'];
+
+        // Update password if new_password is provided and old_password was correct
+        if ($request->filled('new_password') && $request->filled('old_password')) {
+            // The 'current_password' rule already validated the old_password.
+            // If validation passes, we can safely update.
+            $user->password = Hash::make($validatedData['new_password']);
+        }
+
+        $user->save();
+
+        // Handle social links
+        if ($request->has('social_links')) {
+            foreach ($request->social_links as $platform => $url) {
+                if (!empty($url)) {
+                    $isActive = isset($request->social_active[$platform]);
+                    
+                    SocialLink::updateOrCreate(
+                        [
+                            'user_id' => $user->user_id,
+                            'platform' => $platform
+                        ],
+                        [
+                            'url' => $url,
+                            'is_active' => $isActive
+                        ]
+                    );
+                } else {
+                    // Delete if URL is empty
+                    SocialLink::where('user_id', $user->user_id)
+                             ->where('platform', $platform)
+                             ->delete();
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', 'Profile updated successfully!');
+    }
 
     public function deletReaderProfile(Request $request) // Method name as per your existing empty function
     {
@@ -207,6 +429,53 @@ class ProfilesController extends Controller
             
             // Since the user is already logged out, redirecting them home with an error is a safe bet.
             // You might want to add more sophisticated error handling or user notification.
+            return redirect()->route('home')->with('error', 'An error occurred while trying to delete your account. Please contact support.');
+        }
+    }
+
+    public function deleteAuthorProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validateWithBag('deleteAccount', [
+            'password_delete' => ['required', 'string'],
+        ], [
+            'password_delete.required' => 'Password is required to delete your account.'
+        ]);
+
+        if (!Hash::check($request->password_delete, $user->password)) {
+            return redirect()->back()
+                             ->withInput()
+                             ->with('error_delete_account', 'The provided password does not match your current password.')
+                             ->withErrors(['password_delete' => 'Incorrect password.'], 'deleteAccount');
+        }
+
+        try {
+            // Delete profile photo if exists
+            if ($user->userProfile && $user->userProfile->profile_photo) {
+                Storage::disk('public')->delete($user->userProfile->profile_photo);
+            }
+
+            // Delete related records
+            if (class_exists(Contact::class)) {
+                Contact::where('user_id', $user->user_id)->delete();
+            }
+
+            if (class_exists(ArticleLike::class)) {
+                ArticleLike::where('user_id', $user->user_id)->delete();
+            }
+
+            // Log out user
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            // Delete user (this should cascade to UserProfile and Articles)
+            $user->delete();
+
+            return redirect()->route('home')->with('success', 'Your account has been successfully deleted.');
+
+        } catch (\Exception $e) {
             return redirect()->route('home')->with('error', 'An error occurred while trying to delete your account. Please contact support.');
         }
     }

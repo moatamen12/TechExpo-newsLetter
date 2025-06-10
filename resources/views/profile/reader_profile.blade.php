@@ -165,7 +165,7 @@
 
                                 {{-- Collapsible password change section --}}
                                 <div class="collapse row g-3 mt-2" id="passwordChangeSection">
-                                    <span class="text-muted col-12">Please enter your current password to set a new one.</span>
+                                    <span class="text-muted col-12">You Have Enter your current password to set a new one.</span>
                                     {{-- Old Password --}}
                                     <div class="col-md-6">
                                         <label for="old_password" class="form-label mt-2">Old Password</label>

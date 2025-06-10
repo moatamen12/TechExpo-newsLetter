@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Article;
 use App\Models\Comment;
+use App\Models\SocialLink;
 use Illuminate\Support\Facades\Auth;
 
 class UserProfiles extends Model
@@ -15,7 +16,7 @@ class UserProfiles extends Model
 
     protected $fillable = [
         'user_id', 'profile_photo', 'bio', 'work', 'website', 
-        'social_links', 'followers_count', 'num_articles', 'reactions_count'
+        'social_links', 'followers_count', 'num_articles', 'reactions_count', 'title'
     ];
     
     //relation with the user model (one to one)
@@ -31,6 +32,22 @@ class UserProfiles extends Model
     //relation with the comments model (one to many)
     public function comments(){
         return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Relationship with SocialLink model (one to many)
+     */
+    public function socialLinks()
+    {
+        return $this->hasMany(SocialLink::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Get active social links
+     */
+    public function activeSocialLinks()
+    {
+        return $this->hasMany(SocialLink::class, 'user_id', 'user_id')->active();
     }
 
     public function get_profile_info($user_id)

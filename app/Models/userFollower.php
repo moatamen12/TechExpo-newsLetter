@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\UserProfiles;
+use App\Services\SubscriberService;
 
 class userFollower extends Model
 {
@@ -78,5 +79,19 @@ class userFollower extends Model
         return $query->where('following_id', $userId)
                      ->with('follower')
                      ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Boot method to handle events
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Optionally auto-subscribe followers to newsletter
+        static::created(function ($follow) {
+            $subscriberService = new SubscriberService();
+            $subscriberService->subscribeOnFollow($follow->follower_id);
+        });
     }
 }

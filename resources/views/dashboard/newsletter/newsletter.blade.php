@@ -3,7 +3,7 @@
 
 @php 
     $CreateBTN = [
-        'link' => '#', // You'll need to create this route later
+        'link' => route('newsletter.create'),
         'text' => '<span><i class="fa-regular fa-newspaper" style="color: #ffffff;"></i> New Newsletter</span>'
     ];
     $dashboardTabs=[

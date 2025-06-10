@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Weekly Tech Update - AI Innovations</title>
+    <title>{{ $newsletter['title'] ?? 'Newsletter' }}</title>
     <!--[if mso]>
     <noscript>
         <xml>
@@ -172,36 +172,6 @@
             border: none;
         }
         
-        /* Article Card */
-        .article-card {
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            background-color: #f8f9fa;
-        }
-        
-        .article-card h4 {
-            color: #2c3e50;
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 10px 0;
-        }
-        
-        .article-card p {
-            color: #6c757d;
-            font-size: 14px;
-            margin: 0 0 15px 0;
-            line-height: 1.5;
-        }
-        
-        .read-more {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
         /* Footer */
         .footer {
             background-color: #2c3e50;
@@ -296,125 +266,84 @@
                 margin: 20px 0 !important;
             }
         }
-        
-        /* Dark Mode Support */
-        @media (prefers-color-scheme: dark) {
-            .content {
-                background-color: #ffffff !important;
-            }
-            
-            .content p,
-            .content li {
-                color: #555555 !important;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="email-container">
         <!-- Header Section -->
         <div class="header">
-            <h1>Weekly Tech Update - AI Innovations</h1>
-            <p>Discover the latest breakthroughs in artificial intelligence and how they're shaping our future</p>
-            <div class="newsletter-type">Weekly Digest</div>
+            <h1>{{ $newsletter['title'] ?? 'Newsletter Title' }}</h1>
+            <p>{{ $newsletter['summary'] ?? 'Newsletter preview text' }}</p>
+            <div class="newsletter-type">
+                @if(isset($newsletter['newsletter_type']))
+                    @switch($newsletter['newsletter_type'])
+                        @case('weekly')
+                            Weekly Digest
+                            @break
+                        @case('special')
+                            Special Edition
+                            @break
+                        @case('announcement')
+                            Announcement
+                            @break
+                        @default
+                            Newsletter
+                    @endswitch
+                @else
+                    Newsletter
+                @endif
+            </div>
         </div>
         
         <!-- Featured Image -->
-        <img src="https://via.placeholder.com/600x250/667eea/ffffff?text=Featured+Image" alt="Newsletter Header" class="featured-image">
+        @if(isset($newsletter['featured_image']) && $newsletter['featured_image'])
+            <img src="{{ $newsletter['featured_image'] }}" alt="Newsletter Header" class="featured-image">
+        @endif
         
         <!-- Content Section -->
         <div class="content">
-            <!-- Main Content -->
-            <h2>🚀 This Week's Highlights</h2>
-            
-            <p>Hello there! Welcome to another exciting edition of our weekly newsletter. This week, we're diving deep into the fascinating world of artificial intelligence and its revolutionary impact on various industries.</p>
-            
-            <h3>🧠 AI Breakthrough: GPT-4 Vision</h3>
-            <p>OpenAI has released GPT-4 Vision, a groundbreaking multimodal AI that can understand and analyze images alongside text. This development opens up incredible possibilities for:</p>
-            
-            <ul>
-                <li><strong>Content Creation:</strong> Automatic image descriptions and alt-text generation</li>
-                <li><strong>Medical Diagnosis:</strong> AI-assisted analysis of medical imagery</li>
-                <li><strong>Education:</strong> Interactive learning with visual content understanding</li>
-                <li><strong>Accessibility:</strong> Better tools for visually impaired users</li>
-            </ul>
-            
-            <a href="#" class="cta-button">Read Full Article →</a>
+            <!-- Dynamic Content -->
+            {!! $newsletter['content'] ?? 'Newsletter content goes here...' !!}
             
             <div class="divider"></div>
             
-            <h3>💼 Industry Spotlight: AI in Healthcare</h3>
-            <p>The healthcare industry is experiencing a revolutionary transformation thanks to artificial intelligence. From diagnostic imaging to drug discovery, AI is making healthcare more accurate, efficient, and accessible.</p>
+            <!-- Footer Message -->
+            <p><em>Thank you for being a valued subscriber! We appreciate your continued interest in our updates.</em></p>
             
-            <!-- Article Cards -->
-            <div class="article-card">
-                <h4>🏥 AI-Powered Diagnostic Tools</h4>
-                <p>New machine learning algorithms can now detect early-stage diseases with 95% accuracy, potentially saving millions of lives through early intervention.</p>
-                <a href="#" class="read-more">Read more →</a>
-            </div>
-            
-            <div class="article-card">
-                <h4>💊 Accelerated Drug Discovery</h4>
-                <p>Pharmaceutical companies are using AI to reduce drug development time from 10+ years to just 3-5 years, bringing life-saving medications to market faster.</p>
-                <a href="#" class="read-more">Read more →</a>
-            </div>
-            
-            <h3>🔧 Developer Tools & Resources</h3>
-            <p>Here are some fantastic tools and resources that caught our attention this week:</p>
-            
-            <ul>
-                <li><strong>TensorFlow 2.14:</strong> Latest release with improved performance and new features</li>
-                <li><strong>Hugging Face Transformers:</strong> New pre-trained models for computer vision tasks</li>
-                <li><strong>OpenAI Cookbook:</strong> Updated examples and best practices for API usage</li>
-                <li><strong>AI Ethics Guidelines:</strong> New framework for responsible AI development</li>
-            </ul>
-            
-            <div class="divider"></div>
-            
-            <h3>📚 Learning Corner</h3>
-            <p>Want to stay ahead in the AI revolution? Here are our top recommended courses and tutorials:</p>
-            
-            <p><strong>🎓 Free Course:</strong> "Introduction to Machine Learning" by Andrew Ng on Coursera</p>
-            <p><strong>📖 Must-Read Book:</strong> "Artificial Intelligence: A Guide for Thinking Humans" by Melanie Mitchell</p>
-            <p><strong>🎥 YouTube Channel:</strong> "Two Minute Papers" for bite-sized AI research summaries</p>
-            
-            <a href="#" class="cta-button">Explore All Resources →</a>
-            
-            <div class="divider"></div>
-            
-            <p><em>Thank you for being a valued subscriber! We appreciate your continued interest in staying updated with the latest technology trends. Your engagement and feedback help us create better content for our community.</em></p>
-            
-            <p><strong>What would you like to see in our next newsletter?</strong> Reply to this email and let us know!</p>
+            @if($subscriber)
+                <p><strong>Hello {{ $subscriber->name ?? 'Subscriber' }}!</strong> We hope you enjoyed this newsletter.</p>
+            @endif
         </div>
         
         <!-- Footer Section -->
         <div class="footer">
             <h3>Stay Connected With Us</h3>
-            <p>Follow us on social media for daily updates, behind-the-scenes content, and exclusive tech insights.</p>
+            <p>Follow us on social media for the latest updates and news.</p>
             
             <div class="social-links">
-                <a href="#" target="_blank">🌐 Website</a>
-                <a href="#" target="_blank">🐦 Twitter</a>
-                <a href="#" target="_blank">📘 Facebook</a>
-                <a href="#" target="_blank">💼 LinkedIn</a>
-                <a href="#" target="_blank">📺 YouTube</a>
+                <a href="{{ config('app.website_url', '#') }}" target="_blank">🌐 Website</a>
+                <a href="{{ config('app.twitter_url', '#') }}" target="_blank">🐦 Twitter</a>
+                <a href="{{ config('app.facebook_url', '#') }}" target="_blank">📘 Facebook</a>
+                <a href="{{ config('app.linkedin_url', '#') }}" target="_blank">💼 LinkedIn</a>
             </div>
             
             <p>
-                <strong>Tech Newsletter Team</strong><br>
-                📧 newsletter@techcompany.com<br>
-                📞 (555) 123-4567<br>
-                🏢 123 Tech Street, Innovation City, TC 12345
+                <strong>{{ config('app.name', 'Newsletter Team') }}</strong><br>
+                📧 {{ config('mail.from.address', 'newsletter@example.com') }}<br>
+                📞 {{ config('app.phone', '(555) 123-4567') }}
             </p>
             
             <div class="unsubscribe">
                 <p>
-                    You're receiving this email because you subscribed to our weekly tech newsletter.<br>
-                    <a href="#">Unsubscribe</a> | <a href="#">Update Email Preferences</a> | <a href="#">View in Browser</a>
+                    You're receiving this email because you subscribed to our newsletter.<br>
+                    {{-- <a href="{{ $unsubscribeUrl }}">Unsubscribe</a> |  --}}
+                    {{-- <a href="{{ $preferencesUrl }}">Update Preferences</a> --}}
                 </p>
                 <p style="margin-top: 15px;">
-                    © 2025 Tech Newsletter Company. All rights reserved.<br>
-                    This email was sent to subscriber@example.com
+                    © {{ $currentYear }} {{ config('app.name', 'Your Company') }}. All rights reserved.
+                    @if($subscriber)
+                        <br>This email was sent to {{ $subscriber->email }}
+                    @endif
                 </p>
             </div>
         </div>

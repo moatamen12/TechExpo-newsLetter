@@ -12,34 +12,85 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\newsletterController;
 use App\Http\Controllers\ReaderEnteractions;
+use App\Mail\NewsletterEmail;
 
-// test emailing route
-// Route::get('/test-email',function(){
-//     $name = "test email";
-//     Mail::to('motx98990@gmail.com')->send(new \App\Mail\NewsletterEmail($name));
+// // Test emailing route - sends to motx98990@gmail.com
+// Route::get('/test-newsletter-email', function () {
+//     $newsletterData = [
+//         'title' => 'Weekly Tech Update - AI Innovations',
+//         'summary' => 'Discover the latest breakthroughs in artificial intelligence and how they\'re shaping our future. This week we cover new developments in machine learning, robotics, and more.',
+//         'content' => '
+//             <h2>🚀 This Week\'s Highlights</h2>
+//             <p>Hello there! Welcome to another exciting edition of our weekly newsletter. This week, we\'re diving deep into the fascinating world of artificial intelligence and its revolutionary impact on various industries.</p>
+            
+//             <h3>🧠 AI Breakthrough: GPT-4 Vision</h3>
+//             <p>OpenAI has released GPT-4 Vision, a groundbreaking multimodal AI that can understand and analyze images alongside text. This development opens up incredible possibilities for content creation, medical diagnosis, education, and accessibility.</p>
+            
+//             <ul>
+//                 <li><strong>Content Creation:</strong> Automatic image descriptions and alt-text generation</li>
+//                 <li><strong>Medical Diagnosis:</strong> AI-assisted analysis of medical imagery</li>
+//                 <li><strong>Education:</strong> Interactive learning with visual content understanding</li>
+//                 <li><strong>Accessibility:</strong> Better tools for visually impaired users</li>
+//             </ul>
+            
+//             <h3>💼 Industry Spotlight: AI in Healthcare</h3>
+//             <p>The healthcare industry is experiencing a revolutionary transformation thanks to artificial intelligence. From diagnostic imaging to drug discovery, AI is making healthcare more accurate, efficient, and accessible.</p>
+//         ',
+//         'newsletter_type' => 'weekly',
+//         'featured_image' => 'https://via.placeholder.com/600x250/667eea/ffffff?text=Featured+Image'
+//     ];
 
-// });
+//     $subscriber = (object) [
+//         'name' => 'Test User',
+//         'email' => 'naief.moatamen@etu.univ-mosta.dz',
+//         'unsubscribe_token' => 'demo-token',
+//         'preferences_token' => 'demo-token'
+//     ];
+
+//     return new \App\Mail\NewsletterEmail($newsletterData, $subscriber);
+// })->name('test.newsletter.email');
+
+// // Route to actually SEND the test email to motx98990@gmail.com
+// Route::get('/send-test-newsletter-email', function () {
+//     $newsletterData = [
+//         'title' => 'Weekly Tech Update - AI Innovations',
+//         'summary' => 'Discover the latest breakthroughs in artificial intelligence and how they\'re shaping our future. This week we cover new developments in machine learning, robotics, and more.',
+//         'content' => '
+//             <h2>🚀 This Week\'s Highlights</h2>
+//             <p>Hello there! Welcome to another exciting edition of our weekly newsletter. This week, we\'re diving deep into the fascinating world of artificial intelligence and its revolutionary impact on various industries.</p>
+            
+//             <h3>🧠 AI Breakthrough: GPT-4 Vision</h3>
+//             <p>OpenAI has released GPT-4 Vision, a groundbreaking multimodal AI that can understand and analyze images alongside text. This development opens up incredible possibilities for content creation, medical diagnosis, education, and accessibility.</p>
+            
+//             <ul>
+//                 <li><strong>Content Creation:</strong> Automatic image descriptions and alt-text generation</li>
+//                 <li><strong>Medical Diagnosis:</strong> AI-assisted analysis of medical imagery</li>
+//                 <li><strong>Education:</strong> Interactive learning with visual content understanding</li>
+//                 <li><strong>Accessibility:</strong> Better tools for visually impaired users</li>
+//             </ul>
+            
+//             <h3>💼 Industry Spotlight: AI in Healthcare</h3>
+//             <p>The healthcare industry is experiencing a revolutionary transformation thanks to artificial intelligence. From diagnostic imaging to drug discovery, AI is making healthcare more accurate, efficient, and accessible.</p>
+//         ',
+//         'newsletter_type' => 'weekly',
+//         'featured_image' => 'https://via.placeholder.com/600x250/667eea/ffffff?text=Featured+Image'
+//     ];
+
+//     $subscriber = (object) [
+//         'name' => 'Test User',
+//         'email' => 'naief.moatamen@etu.univ-mosta.dz',
+//         'unsubscribe_token' => 'demo-token',
+//         'preferences_token' => 'demo-token'
+//     ];
+
+//     // Actually send the email
+//     Mail::to('naief.moatamen@etu.univ-mosta.dz')->send(new \App\Mail\NewsletterEmail($newsletterData, $subscriber));
+
+//     return 'Test newsletter email sent successfully to: motx98990@gmail.com';
+// })->name('send.test.newsletter.email');
 
 
 
-
-//rout to the subscribe
-Route::get('/subscribe',[SubscribeController::class, 'create'])->name('subscribe');
-Route::post('/subscribe',[SubscribeController::class, 'store'])->name('subscribe.submit');;
-//rout to the login
-Route::get('/login', [LoginController::class, 'create'])->name('login');
-Route::post('/login',[LoginController::class, 'store'])->name('login.submit');;
-//rput to logout
-Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
-
-
-
-
-//index route
-Route::get('/', [HomeController::class, 'index'])->name('home');
-//home partials routes
-Route::get('/home/partials', [HomeController::class, 'homePartials'])->name('home.partials');
-Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, 'loadMoreArticles'])->name('home.loadMoreArticles');
 
 
 
@@ -47,10 +98,9 @@ Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, '
 // articles routs
 Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 Route::get('/articles/search', [ArticlesController::class, 'search'])->name('articles.search'); // New route for search
-
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
-
+// article rout that uses the medal ware 
 Route::middleware('auth')->group(function () {
     // Comments routes
     Route::post('/comments/{article:article_id}', [CommentController::class, 'store'])->name('comments.store');
@@ -88,39 +138,103 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
 
     //for the newsletter management
     Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
+    Route::get('/dashboard/newsletter/create', [NewsLetterController::class, 'create'])->name('newsletter.create'); //create a email newsletter
     Route::get('/newsletters/{id}', [NewsLetterController::class, 'show'])->name('newsletters.show');//show a newsletter by id
 
+    Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
+    Route::get('/dashboard/newsletter/edit/{newsletter_id}', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
+    Route::patch('/dashboard/newsletter/update/{newsletter_id}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
+    Route::delete('/dashboard/newsletter/{newsletter_id}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
+    Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
+    Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
 
+    // Author profile management routes
+    Route::post('/profile/author/update', [ProfilesController::class, 'updateAuthorProfile'])->name('author.profile.update');
+    Route::delete('/profile/author/delete', [ProfilesController::class, 'deleteAuthorProfile'])->name('author.profile.delete');
 });
-
-// route to the profile page
-Route::get('/profile',[ProfilesController::class,'index'])
-                      ->middleware('auth')  
-                      ->can('accessProfile') 
-                      ->name('profile');
 
 //route for the profile.show for author
 Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])->name('profile.show');
+//profile route
+Route::middleware(['auth'])->group(function () {
+    // Main profile route - shows appropriate profile based on user type
+    Route::get('/profile', [ProfilesController::class, 'index'])
+        ->can('accessProfile') 
+        ->name('profile');
+
+    // Reader profile management routes
+    Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
+        ->can('accessProfile') 
+        ->name('profile.update');
+    Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
+        ->can('accessProfile') 
+        ->name('profile.delete');
     
+    // Author profile route (for when authors want to view their own profile)
+    Route::get('/profile/author', [ProfilesController::class, 'authorProfile'])
+        ->can('accessProfile')
+        ->name('author.profile.show');
+});
 
-//reader profile
-Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
-                      ->middleware('auth')  
-                      ->can('accessProfile') 
-                      ->name('reader_profile');
-
-//edit reader profile 
-Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
-                      ->middleware('auth')  
-                      ->can('accessProfile') 
-                      ->name('profile.update');
-//delet reader acount 
-Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
-                      ->middleware('auth')
-                      ->can('accessProfile') 
-                      ->name('profile.delete');
+// // route to the profile page
+// Route::get('/profile',[ProfilesController::class,'index'])
+//                       ->middleware('auth')  
+//                       ->can('accessProfile') 
+//                       ->name('profile');
 
 
+
+// //reader profile
+// Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
+//                       ->middleware('auth')  
+//                       ->can('accessProfile') 
+//                       ->name('reader_profile');
+
+// //edit reader profile 
+// Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
+//                       ->middleware('auth')  
+//                       ->can('accessProfile') 
+//                       ->name('profile.update');
+// //delet reader acount 
+// Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
+//                       ->middleware('auth')
+//                       ->can('accessProfile') 
+//                       ->name('profile.delete');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//rout to the subscribe
+Route::get('/subscribe',[SubscribeController::class, 'create'])->name('subscribe');
+Route::post('/subscribe',[SubscribeController::class, 'store'])->name('subscribe.submit');;
+//rout to the login
+Route::get('/login', [LoginController::class, 'create'])->name('login');
+Route::post('/login',[LoginController::class, 'store'])->name('login.submit');;
+//rput to logout
+Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+
+
+//index route
+Route::get('/', [HomeController::class, 'index'])->name('home');
+//home partials routes
+Route::get('/home/partials', [HomeController::class, 'homePartials'])->name('home.partials');
+Route::get('/load-more-articles', [App\Http\Controllers\HomeController::class, 'loadMoreArticles'])->name('home.loadMoreArticles');
 
 
 
