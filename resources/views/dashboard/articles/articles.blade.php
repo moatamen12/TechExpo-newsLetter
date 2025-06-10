@@ -3,7 +3,7 @@
 
 @php 
     $CreateBTN = [
-        'link' => 'articles/create',
+        'link' => route('articles.create'),
         'text' => '<span><i class="fa-regular fa-pen-to-square" style="color: #ffffff;"></i> New Content</span>'
     ];
     $dashboardTabs=[

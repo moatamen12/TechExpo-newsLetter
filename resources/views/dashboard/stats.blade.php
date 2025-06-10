@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
 @section('title', 'Analytics & Stats')
-
+@push('styles')
+    <link href="{{ asset('assets/css/stats-dashboard.css') }}" rel="stylesheet">
+@endpush
 @section('content')
 <div class="container-fluid p-4">
     <!-- Header -->
