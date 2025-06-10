@@ -133,3 +133,8 @@ Route::get('/contact', [ContactController::class, 'create'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.submit'); //for when submeted
 //about us route
 Route::get('/about', function () { return view('about_us.about_us'); })->name('about');
+
+// stats route
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard/stats', [App\Http\Controllers\StatsController::class, 'index'])->name('dashboard.stats');
+});

@@ -15,5 +15,9 @@
 </li>
 
 <li class="nav-item">
+    <a class="nav-link" href="{{ route('dashboard.stats') }}">Stats</a>
+</li>
+
+<li class="nav-item">
     <a class="nav-link" href="#">Settings</a>
 </li>

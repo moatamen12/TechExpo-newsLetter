@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            transition: box-shadow 0.3s ease;
+            border: none;
+            border-radius: 12px;
+        }
+
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .table-borderless tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table-borderless tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        .category-chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        .card-header {
+            border-bottom: 1px solid #e9ecef;
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .stats-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .metric-change {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 200px;
+            }
+            
+            .metric-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="fw-bold mb-1">Analytics Dashboard</h2>
+                <p class="text-muted mb-0">Track your content performance and audience growth</p>
+            </div>
+        </div>
+
+        <!-- Key Metrics Row -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-primary me-3">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div>
+                                <div class="metric-value">24.5K</div>
+                                <div class="metric-change">
+                                    <i class="fas fa-arrow-up me-1"></i>+12% from last month
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="opacity-75">Total Views</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-success me-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="metric-value text-dark">1.2K</div>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+8% from last month
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Subscribers</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-warning me-3">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div>
+                                <div class="metric-value text-dark">48</div>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+5 this month
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Published Articles</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="stats-icon bg-info me-3">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div>
+                                <div class="metric-value text-dark">892</div>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>+15% from last month
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Total Likes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <!-- Monthly Performance Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title fw-bold mb-0">Monthly Performance</h5>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    Last 6 months
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">Last 3 months</a></li>
+                                    <li><a class="dropdown-item" href="#">Last 6 months</a></li>
+                                    <li><a class="dropdown-item" href="#">Last year</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audience Growth Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title fw-bold mb-0">Audience Growth</h5>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    This year
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">This month</a></li>
+                                    <li><a class="dropdown-item" href="#">This year</a></li>
+                                    <li><a class="dropdown-item" href="#">All time</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="audienceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Analysis Row -->
+        <div class="row">
+            <!-- Top Performing Articles -->
+            <div class="col-lg-8 mb-4">
+                <div class="card h-100 border-light shadow-sm">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title fw-bold mb-0">Top Performing Articles</h5>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr class="border-bottom">
+                                        <td class="py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <img src="https://via.placeholder.com/50x50/4CAF50/FFFFFF?text=1" 
+                                                         class="rounded" alt="Article">
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark">Getting Started with Laravel 10: A Complete Guide</strong>
+                                                    <small class="text-muted">Published on Mar 15, 2025 • by John Doe</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge bg-light text-dark mb-1">
+                                                    <i class="fas fa-eye me-1"></i>8,432 views
+                                                </span>
+                                                <div>
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        <i class="fas fa-heart me-1"></i>234
+                                                    </span>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-comment me-1"></i>89
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <img src="https://via.placeholder.com/50x50/2196F3/FFFFFF?text=2" 
+                                                         class="rounded" alt="Article">
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark">Modern CSS Techniques for Responsive Design</strong>
+                                                    <small class="text-muted">Published on Mar 10, 2025 • by Jane Smith</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge bg-light text-dark mb-1">
+                                                    <i class="fas fa-eye me-1"></i>6,721 views
+                                                </span>
+                                                <div>
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        <i class="fas fa-heart me-1"></i>189
+                                                    </span>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-comment me-1"></i>67
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <img src="https://via.placeholder.com/50x50/FF9800/FFFFFF?text=3" 
+                                                         class="rounded" alt="Article">
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark">JavaScript ES6 Features Every Developer Should Know</strong>
+                                                    <small class="text-muted">Published on Mar 5, 2025 • by Mike Johnson</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge bg-light text-dark mb-1">
+                                                    <i class="fas fa-eye me-1"></i>5,943 views
+                                                </span>
+                                                <div>
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        <i class="fas fa-heart me-1"></i>167
+                                                    </span>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-comment me-1"></i>54
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <img src="https://via.placeholder.com/50x50/9C27B0/FFFFFF?text=4" 
+                                                         class="rounded" alt="Article">
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark">Building RESTful APIs with Express.js</strong>
+                                                    <small class="text-muted">Published on Feb 28, 2025 • by Sarah Wilson</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge bg-light text-dark mb-1">
+                                                    <i class="fas fa-eye me-1"></i>4,876 views
+                                                </span>
+                                                <div>
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        <i class="fas fa-heart me-1"></i>142
+                                                    </span>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-comment me-1"></i>38
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <img src="https://via.placeholder.com/50x50/F44336/FFFFFF?text=5" 
+                                                         class="rounded" alt="Article">
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark">React Hooks: A Comprehensive Tutorial</strong>
+                                                    <small class="text-muted">Published on Feb 25, 2025 • by David Brown</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge bg-light text-dark mb-1">
+                                                    <i class="fas fa-eye me-1"></i>4,329 views
+                                                </span>
+                                                <div>
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        <i class="fas fa-heart me-1"></i>128
+                                                    </span>
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-comment me-1"></i>42
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Categories & Recent Activity -->
+            <div class="col-lg-4 mb-4">
+                <!-- Content Categories -->
+                <div class="card border-light shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title fw-bold mb-0">Content Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="category-chart-container d-flex align-items-center justify-content-center">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #20c997;"></div>
+                                    <small class="text-muted">Web Development</small>
+                                </div>
+                                <small class="fw-bold">43%</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #17a2b8;"></div>
+                                    <small class="text-muted">JavaScript</small>
+                                </div>
+                                <small class="fw-bold">29%</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #6f42c1;"></div>
+                                    <small class="text-muted">CSS</small>
+                                </div>
+                                <small class="fw-bold">18%</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #fd7e14;"></div>
+                                    <small class="text-muted">React</small>
+                                </div>
+                                <small class="fw-bold">10%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card border-light shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title fw-bold mb-0">Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-plus text-white" style="font-size: 12px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="text-muted d-block">2 hours ago</small>
+                                    <strong class="text-dark">New article published</strong>
+                                    <p class="text-muted mb-0 small">Laravel 10 Best Practices</p>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-info d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-user text-white" style="font-size: 12px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="text-muted d-block">5 hours ago</small>
+                                    <strong class="text-dark">New subscriber</strong>
+                                    <p class="text-muted mb-0 small">alex@example.com joined</p>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-heart text-white" style="font-size: 12px;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="text-muted d-block">1 day ago</small>
+                                    <strong class="text-dark">Article liked</strong>
+                                    <p class="text-muted mb-0 small">JavaScript ES6 Features received 50+ likes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dummy data
+            const monthlyData = {
+                months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                views: [12500, 15200, 18700, 22100, 19800, 24500]
+            };
+
+            const audienceData = {
+                months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                users: [850, 920, 1050, 1150, 1180, 1220]
+            };
+
+            // Monthly Performance Chart
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.months,
+                    datasets: [{
+                        label: 'Views',
+                        data: monthlyData.views,
+                        borderColor: '#20c997',
+                        backgroundColor: 'rgba(32, 201, 151, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#20c997',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#20c997',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Views: ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000) + 'K';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#6c757d'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Audience Growth Chart
+            const audienceCtx = document.getElementById('audienceChart').getContext('2d');
+            new Chart(audienceCtx, {
+                type: 'line',
+                data: {
+                    labels: audienceData.months,
+                    datasets: [{
+                        label: 'Users',
+                        data: audienceData.users,
+                        borderColor: '#17a2b8',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#17a2b8',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#17a2b8',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Users: ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#6c757d'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Category Pie Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            const categoryColors = ['#20c997', '#17a2b8', '#6f42c1', '#fd7e14'];
+            
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Web Development', 'JavaScript', 'CSS', 'React'],
+                    datasets: [{
+                        data: [43, 29, 18, 10],
+                        backgroundColor: categoryColors,
+                        borderWidth: 0,
+                        cutout: '60%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

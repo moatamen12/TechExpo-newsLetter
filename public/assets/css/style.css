@@ -591,3 +591,44 @@ secondary bg 242429
 .articall-card-hover:hover .article-image {
     transform: scale(1.05);
 }
+
+/* Stats Dashboard Styles */
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.table-borderless tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-borderless tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+/* Chart containers */
+#monthlyChart, #audienceChart {
+    max-height: 250px;
+}
+
+#categoryChart {
+    max-height: 200px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    #monthlyChart, #audienceChart {
+        max-height: 200px;
+    }
+}
