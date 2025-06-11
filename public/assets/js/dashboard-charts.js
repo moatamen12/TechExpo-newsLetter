@@ -68,14 +68,32 @@ class DashboardCharts {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
+        // Use real data or fallback to empty arrays
+        const labels = data.months || [];
+        const followers = data.followers || [];
+        
+        // If no data, show a message instead of fake data
+        if (labels.length === 0 || followers.length === 0) {
+            ctx.getContext('2d').fillText('No audience data available', 10, 50);
+            return;
+        }
+
         return new Chart(ctx.getContext('2d'), {
-            type: 'bar',
+            type: 'line',
             data: {
-                labels: data.labels || ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                labels: labels,
                 datasets: [{
-                    label: 'New Followers',
-                    data: data.followers || [45, 52, 38, 67],
-                    backgroundColor: this.colors.info
+                    label: 'Followers',
+                    data: followers,
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    borderColor: this.colors.info,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: this.colors.info,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -84,13 +102,26 @@ class DashboardCharts {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Followers: ${context.parsed.y}`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: this.colors.light
+                            color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.floor(value) === value ? value : '';
+                            }
                         }
                     },
                     x: {
@@ -98,6 +129,10 @@ class DashboardCharts {
                             display: false
                         }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
@@ -152,18 +187,35 @@ class DashboardCharts {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
+        // Use real data or show empty state
+        const labels = data.months || [];
+        const users = data.followers || data.users || [];
+        
+        if (labels.length === 0 || users.length === 0) {
+            const context = ctx.getContext('2d');
+            context.fillStyle = '#6c757d';
+            context.font = '14px Arial';
+            context.textAlign = 'center';
+            context.fillText('No audience data available', ctx.width / 2, ctx.height / 2);
+            return;
+        }
+
         return new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: data.months || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: labels,
                 datasets: [{
-                    label: 'Users',
-                    data: data.users || [100, 150, 200, 250, 300, 350],
+                    label: 'Followers',
+                    data: users,
                     borderColor: this.colors.info,
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: this.colors.info,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -172,13 +224,26 @@ class DashboardCharts {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Followers: ${context.parsed.y}`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         grid: {
-                            color: this.colors.light
+                            color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.floor(value) === value ? value : '';
+                            }
                         }
                     },
                     x: {
@@ -186,6 +251,10 @@ class DashboardCharts {
                             display: false
                         }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });

@@ -4,7 +4,7 @@
 @php 
     $CreateBTN = [
         'link' => route('articles.create'),
-        'text' => '<span><i class="fa-regular fa-pen-to-square" style="color: #ffffff;"></i> New Content</span>'
+        'text' => '<span><i class="fa-regular fa-pen-to-square" style="color: #ffffff;"></i> New Article</span>'
     ];
     $dashboardTabs=[
         'all' => [

@@ -103,7 +103,7 @@
                     <a href="{{ route('newsletter.show', $newsletter->id) }}" class="btn text-danger">Cancel</a>
                 </div>
                 <div>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-subscribe">
                         <i class="fas fa-save me-2"></i>Update Newsletter
                     </button>
                 </div>

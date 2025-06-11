@@ -27,24 +27,28 @@ class DashboardController extends Controller
 
     public function index()
     {
+        $user = Auth::user();
+        
         $profile_id = $this->getCorrentUser();
-        $user = $this->user();
+        
+        // Get user dashboard data (this was missing!)
+        $userData = $this->user();
         
         // Get stats data (moved from StatsController)
         $monthlyData = $this->getMonthlyPerformance($profile_id);
-        $audienceGrowth = $this->getAudienceGrowth();
+        $audienceGrowth = $this->getAudienceGrowthData($user);
         $topArticles = $this->getTopPerformingArticles($profile_id);
         $categoryStats = $this->getCategoryStats($profile_id);
         $recentActivity = $this->getRecentActivity($profile_id);
         
-        return view('dashboard.home', [
-            'user' => $user,
-            'monthlyData' => $monthlyData,
-            'audienceGrowth' => $audienceGrowth,
-            'topArticles' => $topArticles,
-            'categoryStats' => $categoryStats,
-            'recentActivity' => $recentActivity,
-        ]);     
+        return view('dashboard.home', compact(
+            'userData', // Add this line
+            'monthlyData',
+            'audienceGrowth',
+            'topArticles',
+            'categoryStats',
+            'recentActivity'
+        ));     
     }
 
     public function articles(Request $request)
@@ -77,15 +81,18 @@ class DashboardController extends Controller
         $user = Auth::id();  
         $profile_id = UserProfiles::where('user_id', $user)->first()->profile_id;
 
-        $user = UserProfiles::Select('*')
-            ->with('user')
-            ->where('profile_id', $profile_id)
-            ->first();
-        
+        $userProfile = UserProfiles::Select('*')
+        ->with('user')
+        ->where('profile_id', $profile_id)
+        ->first();
+    
         $totalArticles = Article::where('author_id', $profile_id)->count();
-        $totalViews = Article::where('author_id', $profile_id)->sum('view_count');
-        $totalLikes = Article::where('author_id', $profile_id)->sum('like_count');
-        $totalcomment = Article::where('author_id', $profile_id)->sum('comment_count');
+        $totalViews = Article::where('author_id', $profile_id)->sum('view_count') ?? 0;
+        $totalLikes = Article::where('author_id', $profile_id)->sum('like_count') ?? 0;
+        $totalcomment = Article::where('author_id', $profile_id)->sum('comment_count') ?? 0;
+
+        // Get actual follower count
+        $followersCount = userFollower::where('following_id', $profile_id)->count();
 
         // Get percentage changes
         $articlesChange = $this->getArticlePercentageChange($profile_id);
@@ -98,25 +105,26 @@ class DashboardController extends Controller
             'totalViews' => $totalViews,
             'totalLikes' => $totalLikes,
             'totalComments' => $totalcomment,
-            'userName' => $user->user->name ?? 'User',
-            'userEmail' => $user->user->email ?? '',
+            'followersCount' => $followersCount, // Add this
+            'userName' => $userProfile->user->name ?? 'User',
+            'userEmail' => $userProfile->user->email ?? '',
             // Add social media links
-            'socialTwitter' => $user->social_twitter ?? null,
-            'socialLinkedin' => $user->social_linkedin ?? null,
-            'socialGithub' => $user->social_github ?? null,
-            'socialWebsite' => $user->social_website ?? null,
-            'profilePhoto' => $user->profile_photo ?? null,
-            'bio' => $user->bio ?? null,
-            'title' => $user->title ?? null,
+            'socialTwitter' => $userProfile->social_twitter ?? null,
+            'socialLinkedin' => $userProfile->social_linkedin ?? null,
+            'socialGithub' => $userProfile->social_github ?? null,
+            'socialWebsite' => $userProfile->social_website ?? null,
+            'profilePhoto' => $userProfile->profile_photo ?? null,
+            'bio' => $userProfile->bio ?? null,
+            'title' => $userProfile->title ?? null,
             // Add percentage data
-            'articlesPercentage' => $articlesChange['percentage'],
-            'articlesDirection' => $articlesChange['direction'],
-            'viewsPercentage' => $viewsChange['percentage'],
-            'viewsDirection' => $viewsChange['direction'],
-            'followersPercentage' => $followersChange['percentage'],
-            'followersDirection' => $followersChange['direction'],
-            'reactionsPercentage' => $reactionsChange['percentage'],
-            'reactionsDirection' => $reactionsChange['direction'],
+            'articlesPercentage' => $articlesChange['percentage'] ?? 0,
+            'articlesDirection' => $articlesChange['direction'] ?? 'neutral',
+            'viewsPercentage' => $viewsChange['percentage'] ?? 0,
+            'viewsDirection' => $viewsChange['direction'] ?? 'neutral',
+            'followersPercentage' => $followersChange['percentage'] ?? 0,
+            'followersDirection' => $followersChange['direction'] ?? 'neutral',
+            'reactionsPercentage' => $reactionsChange['percentage'] ?? 0,
+            'reactionsDirection' => $reactionsChange['direction'] ?? 'neutral',
         ];
     }
 
@@ -146,24 +154,38 @@ class DashboardController extends Controller
         ];
     }
     
-    private function getAudienceGrowth()
+    /**
+     * Get audience growth data for the last 6 months
+     */
+    private function getAudienceGrowthData($user)
     {
+        if (!$user->userProfile) {
+            return [
+                'months' => [],
+                'followers' => []
+            ];
+        }
+
         $months = [];
-        $users = [];
+        $followers = [];
         
+        // Get data for the last 6 months
         for ($i = 5; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = now()->subMonths($i);
             $monthName = $date->format('M');
             $months[] = $monthName;
             
-            $userCount = User::where('created_at', '<=', $date->endOfMonth())
-                           ->count();
-            $users[] = $userCount;
+            // Count followers up to the end of this month
+            $followerCount = userFollower::where('following_id', $user->userProfile->profile_id)
+                ->where('created_at', '<=', $date->endOfMonth())
+                ->count();
+            
+            $followers[] = $followerCount;
         }
         
         return [
             'months' => $months,
-            'users' => $users
+            'followers' => $followers
         ];
     }
     

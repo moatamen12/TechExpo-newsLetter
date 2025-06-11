@@ -127,11 +127,16 @@ class NewsLetterController extends Controller
             abort(403, 'Unauthorized access to newsletter');
         }
 
-        // Get subscriber counts for display
-        $allSubscribers = UserFollower::count(); // Count all users who can be followed
-        $categorySubscribers = UserFollower::where('following_id', $newsletter->author_id)->count(); // Followers of the author
+        // Get follower counts for display - only author's followers
+        $allMyFollowers = UserFollower::where('following_id', $newsletter->author_id)->count(); // All followers of this author
+        $categorySubscribers = $allMyFollowers; // Same as above for now
         
-        return view('dashboard.newsletter.send-options', compact('newsletter', 'allSubscribers', 'categorySubscribers'));
+        // Get the actual followers for selection if needed
+        $myFollowers = UserFollower::with(['follower'])
+            ->where('following_id', $newsletter->author_id)
+            ->get();
+        
+        return view('dashboard.newsletter.send-options', compact('newsletter', 'allMyFollowers', 'categorySubscribers', 'myFollowers'));
     }
 
     /**
@@ -151,7 +156,9 @@ class NewsLetterController extends Controller
         }
 
         $request->validate([
-            'recipient_type' => 'required|in:all,category,test',
+            'recipient_type' => 'required|in:all_followers,selected_followers,test',
+            'selected_followers' => 'required_if:recipient_type,selected_followers|array',
+            'selected_followers.*' => 'exists:user_followers,id',
             'send_time' => 'required|in:immediate,scheduled',
             'scheduled_at' => 'required_if:send_time,scheduled|nullable|date|after:now',
         ]);
@@ -161,6 +168,11 @@ class NewsLetterController extends Controller
             'recipient_type' => $request->recipient_type,
             'status' => $request->send_time === 'scheduled' ? 'scheduled' : 'sent'
         ];
+
+        // Store selected followers if specified - using selected_subscribers column
+        if ($request->recipient_type === 'selected_followers' && $request->selected_followers) {
+            $updateData['selected_subscribers'] = json_encode($request->selected_followers);
+        }
 
         if ($request->send_time === 'scheduled') {
             $updateData['scheduled_at'] = $request->scheduled_at;
@@ -172,7 +184,7 @@ class NewsLetterController extends Controller
 
         if ($request->send_time === 'immediate') {
             // Send immediately
-            $this->sendNewsletterSync($newsletter); // Ensure this method exists and works
+            $this->sendNewsletterSync($newsletter);
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been sent successfully!');
         } else {
@@ -182,21 +194,62 @@ class NewsLetterController extends Controller
         }
     }
 
+    // Get subscribers based on newsletter recipient type
+    private function getSubscribers($newsletter)
+    {
+        switch ($newsletter->recipient_type) {
+            case 'all_followers':
+                // Get all followers of this author
+                return UserFollower::with('follower')
+                    ->where('following_id', $newsletter->author_id)
+                    ->get()
+                    ->map(function($follower) {
+                        return (object) [
+                            'email' => $follower->follower->email,
+                            'name' => $follower->follower->name
+                        ];
+                    });
+            
+            case 'selected_followers':
+                // Get only selected followers - using selected_subscribers column
+                $selectedIds = json_decode($newsletter->selected_subscribers, true) ?? [];
+                if (empty($selectedIds)) {
+                    return collect();
+                }
+                
+                return UserFollower::with('follower')
+                    ->whereIn('id', $selectedIds)
+                    ->where('following_id', $newsletter->author_id)
+                    ->get()
+                    ->map(function($follower) {
+                        return (object) [
+                            'email' => $follower->follower->email,
+                            'name' => $follower->follower->name
+                        ];
+                    });
+            
+            case 'test':
+                // Send only to admin/author for testing
+                $author = $newsletter->author->user ?? null;
+                if ($author) {
+                    return collect([(object) [
+                        'email' => $author->email,
+                        'name' => $author->name
+                    ]]);
+                }
+                return collect();
+            
+            default:
+                return collect();
+        }
+    }
+
     /**
      * Send newsletter synchronously (without queue)
      */
     public function sendNewsletterSync($newsletter)
     {
         try {
-            // Get author information
-            $author = $newsletter->author->user ?? null;
-            
-            if (!$author) {
-                Log::error('Newsletter author not found', ['newsletter_id' => $newsletter->id]);
-                return false;
-            }
-
-            // Get subscribers
             $subscribers = $this->getSubscribers($newsletter);
             
             if ($subscribers->isEmpty()) {
@@ -204,70 +257,75 @@ class NewsLetterController extends Controller
                 return false;
             }
 
-            // Update newsletter status to 'sending'
-            $newsletter->update(['status' => 'sending']);
+            $successCount = 0;
+            $failCount = 0;
 
-            $stats = [
-                'total_recipients' => $subscribers->count(),
-                'sent_successfully' => 0,
-                'failed_deliveries' => 0
-            ];
-
-            // Send newsletter to each subscriber synchronously
             foreach ($subscribers as $subscriber) {
                 try {
-                    Mail::to($subscriber->email, $subscriber->name ?? 'Subscriber')
-                        ->send(new NewsletterEmail($newsletter, $author));
-                    
-                    $stats['sent_successfully']++;
-                    
+                    Mail::send('mail.newsletter-email', [
+                        'newsletter' => $newsletter,
+                        'author' => $newsletter->author
+                    ], function($message) use ($subscriber, $newsletter) {
+                        $message->to($subscriber->email, $subscriber->name)
+                               ->subject($newsletter->title)
+                               ->from(config('mail.from.address'), config('mail.from.name'));
+                    });
+                    $successCount++;
                 } catch (\Exception $e) {
                     Log::error('Failed to send newsletter to subscriber', [
                         'newsletter_id' => $newsletter->id,
                         'subscriber_email' => $subscriber->email,
                         'error' => $e->getMessage()
                     ]);
-                    
-                    $stats['failed_deliveries']++;
+                    $failCount++;
                 }
             }
 
-            // Update newsletter status to 'sent'
+            // Update newsletter status
             $newsletter->update([
                 'status' => 'sent',
                 'sent_at' => now(),
-                'total_sent' => $stats['sent_successfully'],
-                'total_failed' => $stats['failed_deliveries']
+                'recipients_count' => $successCount + $failCount,
+                'success_count' => $successCount,
+                'failed_count' => $failCount
             ]);
 
             // Send success notification to author
             try {
-                Mail::to($author->email, $author->name)
-                    ->send(new NewsletterSentSuccessfully($newsletter, $author, $stats));
-                    
-                Log::info('Newsletter sent successfully', [
-                    'newsletter_id' => $newsletter->id,
-                    'stats' => $stats
-                ]);
-                
+                $author = $newsletter->author->user;
+                if ($author) {
+                    Mail::send('mail.newsletter-sent-successfully', [
+                        'newsletter' => $newsletter,
+                        'author' => $newsletter->author,
+                        'stats' => [
+                            'total_recipients' => $successCount + $failCount,
+                            'sent_successfully' => $successCount,
+                            'failed_deliveries' => $failCount
+                        ]
+                    ], function($message) use ($author, $newsletter) {
+                        $message->to($author->email, $author->name)
+                               ->subject('Newsletter Sent Successfully - ' . $newsletter->title)
+                               ->from(config('mail.from.address'), config('mail.from.name'));
+                    });
+                }
             } catch (\Exception $e) {
                 Log::error('Failed to send success notification', [
                     'newsletter_id' => $newsletter->id,
-                    'author_email' => $author->email,
                     'error' => $e->getMessage()
                 ]);
             }
 
             return true;
-            
         } catch (\Exception $e) {
             Log::error('Newsletter sending failed', [
                 'newsletter_id' => $newsletter->id,
                 'error' => $e->getMessage()
             ]);
             
-            // Update newsletter status to failed
-            $newsletter->update(['status' => 'failed']);
+            $newsletter->update([
+                'status' => 'failed',
+                'sent_at' => now()
+            ]);
             
             return false;
         }
@@ -343,33 +401,6 @@ class NewsLetterController extends Controller
         }
     }
 
-    // Get subscribers based on newsletter recipient type
-    private function getSubscribers($newsletter)
-    {
-        switch ($newsletter->recipient_type) {
-            case 'all':
-                return Subscriber::all();
-            
-            case 'category':
-                // Get subscribers interested in this category/author
-                return Subscriber::where('author_id', $newsletter->author_id)->get();
-            
-            case 'test':
-                // Send only to admin/author for testing
-                $author = $newsletter->author->user ?? null;
-                if ($author) {
-                    return collect([(object) [
-                        'email' => $author->email,
-                        'name' => $author->name
-                    ]]);
-                }
-                return collect();
-            
-            default:
-                return collect();
-        }
-    }
-
     public function newsletter(Request $request){
         $profile_id = $this->getCurrentUser();
         
@@ -387,7 +418,7 @@ class NewsLetterController extends Controller
     
     public function show(Newsletter $newsletter)
     {
-        dd($newsletter);
+        // dd($newsletter);
 
         $currentProfileId = $this->getCurrentUser();
         if ($newsletter->author_id !== $currentProfileId) {
