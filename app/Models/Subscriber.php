@@ -2,35 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\UserProfiles;
 
 class Subscriber extends Model
 {
+    use HasFactory;
+
     protected $table = 'subscribers';
 
     protected $fillable = [
+        'name',
         'email',
-        'user_id',   // refrenc the user taple
-        'author_id', // refrenc the userProfiles table
+        'author_id',
+        'user_id',
+        'is_active',
+        'last_activity_at',
         'subscription_type',
-        'status',
         'subscribed_at',
-        'unsubscribed_at'
+        'unsubscribed_at',
+        'status'
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'is_active' => 'boolean',
+        'last_activity_at' => 'datetime',
         'subscribed_at' => 'datetime',
         'unsubscribed_at' => 'datetime',
-    ];
-
-    // Set default values
-    protected $attributes = [
-        'subscription_type' => 'general',
-        'status' => 'active'
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -38,7 +40,7 @@ class Subscriber extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(\App\Models\User::class);
     }
 
     /**
@@ -54,7 +56,7 @@ class Subscriber extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('is_active', true);
     }
 
     /**

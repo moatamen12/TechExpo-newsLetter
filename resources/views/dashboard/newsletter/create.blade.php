@@ -6,8 +6,8 @@
         'text' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" style="margin-right: 5px;">
             <path fill="white" d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"/></svg>'
     ];
-
 @endphp
+
 @section('content')
 <div class="container px-5 ">
     <x-dashboard-header 
@@ -27,7 +27,7 @@
         </div>
     @endif
 
-    <form action="{{ route('articles.store')}}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('newsletter.store')}}" method="POST" enctype="multipart/form-data">
         @csrf
         <div>
             <div class="mb-4 border-0 bg-white shadow-sm rounded-3">
@@ -50,32 +50,49 @@
                         <small class="text-muted">Preview text should be 30-300 characters</small>
                     </div>
 
-                    <!-- Newsletter Type (New Addition) -->
+                    <!-- Send Options -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Newsletter Type</label>
+                        <label class="form-label fw-bold">Send Options</label>
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="newsletter_type" id="type-weekly" 
-                                        value="weekly" {{ old('newsletter_type', 'weekly') == 'weekly' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="type-weekly">Weekly Digest</label>
+                                    <input class="form-check-input" type="radio" name="send_option" id="send-now" 
+                                        value="now" {{ old('send_option') == 'now' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="send-now">
+                                        <strong>Send Now</strong><br>
+                                        <small class="text-muted">Send immediately after creation</small>
+                                    </label>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="newsletter_type" id="type-special" 
-                                        value="special" {{ old('newsletter_type') == 'special' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="type-special">Special Edition</label>
+                                    <input class="form-check-input" type="radio" name="send_option" id="send-scheduled" 
+                                        value="scheduled" {{ old('send_option') == 'scheduled' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="send-scheduled">
+                                        <strong>Schedule Send</strong><br>
+                                        <small class="text-muted">Schedule for later delivery</small>
+                                    </label>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="newsletter_type" id="type-announcement" 
-                                        value="announcement" {{ old('newsletter_type') == 'announcement' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="type-announcement">Announcement</label>
+                                    <input class="form-check-input" type="radio" name="send_option" id="save-draft" 
+                                        value="draft" {{ old('send_option', 'draft') == 'draft' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="save-draft">
+                                        <strong>Save as Draft</strong><br>
+                                        <small class="text-muted">Save without sending</small>
+                                    </label>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Schedule Date Time (Hidden by default) -->
+                    <div class="mb-4" id="schedule-datetime" style="display: none;">
+                        <label for="scheduled_at" class="form-label fw-bold">Schedule Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="scheduled_at" name="scheduled_at" 
+                            value="{{ old('scheduled_at') }}" min="{{ now()->format('Y-m-d\TH:i') }}">
+                        <small class="text-muted">Select when you want to send this newsletter</small>
                     </div>
                 </div>
             </div>
@@ -174,61 +191,13 @@
                     </div> 
                 </div>
 
-                <!-- Newsletter Scheduling (New Addition) -->
-                <div class="row py-3 border-top">
-                    <div class="col-md-6 col-sm-12 mb-3">
-                        <label class="form-label fw-bold">Send Options</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="send_option" id="send-now" 
-                                value="now" {{ old('send_option', 'now') == 'now' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="send-now">Send Immediately</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="send_option" id="send-later" 
-                                value="scheduled" {{ old('send_option') == 'scheduled' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="send-later">Schedule for Later</label>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-sm-12 mb-3" id="schedule-datetime" style="display: none;">
-                        <label for="scheduled_at" class="form-label fw-bold">Schedule Date & Time</label>
-                        <input type="datetime-local" class="form-control" id="scheduled_at" name="scheduled_at" 
-                            value="{{ old('scheduled_at') }}">
-                    </div>
-                </div>
-
-                <!-- Subscriber Targeting (New Addition) -->
-                <div class="row py-3 border-top">
-                    <div class="col-12 mb-3">
-                        <label class="form-label fw-bold">Send To</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="recipient_type" id="all-subscribers" 
-                                value="all" {{ old('recipient_type', 'all') == 'all' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="all-subscribers">All Subscribers</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="recipient_type" id="category-subscribers" 
-                                value="category" {{ old('recipient_type') == 'category' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="category-subscribers">Subscribers of Selected Category Only</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="recipient_type" id="test-send" 
-                                value="test" {{ old('recipient_type') == 'test' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="test-send">Test Send (Admin Only)</label>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <a href="{{route('dashboard')}}" class="btn text-danger">Cancel</a>
                     </div>
                     <div>
-                        {{-- "Save As Draft" button --}}
-                        <button type="submit" name="status" value="draft" class="btn secondary-btn me-2" id="save-draft-btn">Save As Draft</button>
-                        
-                        {{-- "Send Newsletter" button --}}
-                        <button type="submit" name="status" value="published" class="btn btn-subscribe" id="publish-btn">
-                            <span id="send-btn-text">Send Newsletter</span>
+                        <button type="submit" class="btn btn-subscribe" id="submit-btn">
+                            <span id="submit-btn-text">Save as Draft</span>
                         </button>
                     </div>
                 </div>
@@ -257,9 +226,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sendNowRadio = document.getElementById('send-now');
-            const sendLaterRadio = document.getElementById('send-later');
+            const sendScheduledRadio = document.getElementById('send-scheduled');
+            const saveDraftRadio = document.getElementById('save-draft');
             const scheduleDatetime = document.getElementById('schedule-datetime');
-            const sendBtnText = document.getElementById('send-btn-text');
+            const submitBtnText = document.getElementById('submit-btn-text');
             
             // Content method elements
             const methodEditor = document.getElementById('method-editor');
@@ -272,13 +242,16 @@
             const templateEditOption = document.getElementById('template-edit-option');
             const removeTemplateBtn = document.getElementById('remove-template');
             
-            function toggleScheduleOptions() {
-                if (sendLaterRadio.checked) {
+            function toggleSendOptions() {
+                if (sendScheduledRadio.checked) {
                     scheduleDatetime.style.display = 'block';
-                    sendBtnText.textContent = 'Schedule Newsletter';
+                    submitBtnText.textContent = 'Schedule Newsletter';
+                } else if (sendNowRadio.checked) {
+                    scheduleDatetime.style.display = 'none';
+                    submitBtnText.textContent = 'Continue to Send Options';
                 } else {
                     scheduleDatetime.style.display = 'none';
-                    sendBtnText.textContent = 'Send Newsletter';
+                    submitBtnText.textContent = 'Save as Draft';
                 }
             }
             
@@ -324,15 +297,16 @@
             }
             
             // Event listeners
-            sendNowRadio.addEventListener('change', toggleScheduleOptions);
-            sendLaterRadio.addEventListener('change', toggleScheduleOptions);
+            sendNowRadio.addEventListener('change', toggleSendOptions);
+            sendScheduledRadio.addEventListener('change', toggleSendOptions);
+            saveDraftRadio.addEventListener('change', toggleSendOptions);
             methodEditor.addEventListener('change', toggleContentMethod);
             methodTemplate.addEventListener('change', toggleContentMethod);
             htmlTemplateInput.addEventListener('change', handleTemplateUpload);
             removeTemplateBtn.addEventListener('click', removeTemplate);
             
             // Initialize on page load
-            toggleScheduleOptions();
+            toggleSendOptions();
             toggleContentMethod();
         });
     </script>

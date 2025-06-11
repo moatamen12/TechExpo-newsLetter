@@ -14,7 +14,7 @@
         title="Create New Article/Newsletter" 
         description="Write and publish a new article/newsletter"
         :btn="$btn"
-        class="mb-2 ">
+        class="secondary-btn mb-2 ">
     </x-dashboard-header>
 
     @if ($errors->any())

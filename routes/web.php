@@ -168,16 +168,33 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::delete('/dashboard/newsletter/{newsletter_id}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
     Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
     Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
+    //subscribers management
+    Route::get('/dashboard/subscribers', [NewsLetterController::class, 'subscribers'])->name('dashboard.subscribers');
+    Route::delete('/dashboard/subscribers/{id}', [NewsLetterController::class, 'removeSubscriber'])->name('subscriber.remove');
+    Route::delete('/dashboard/subscribers/bulk-remove', [NewsLetterController::class, 'bulkRemoveSubscribers'])->name('subscribers.bulk-remove');
+    Route::get('/dashboard/subscribers/export', [NewsLetterController::class, 'exportSubscribers'])->name('dashboard.subscribers.export');
+
+
 
     // Newsletter preview route
     Route::get('/newsletter/{id}/preview', [NewsLetterController::class, 'preview'])->name('newsletter.preview');
-
     // Newsletter send route
     Route::post('/newsletter/{id}/send', [NewsLetterController::class, 'sendNewsletter'])->name('newsletter.send');
+    //for the newsletter management
+    Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
+    Route::get('/dashboard/newsletter/create', [NewsLetterController::class, 'create'])->name('newsletter.create'); //create a email newsletter
+    Route::get('/newsletters/{newsletter}', [NewsLetterController::class, 'show'])->name('newsletter.show');//show a newsletter by id
 
-    // Author profile management routes
-    Route::post('/profile/author/update', [ProfilesController::class, 'updateAuthorProfile'])->name('author.profile.update');
-    Route::delete('/profile/author/delete', [ProfilesController::class, 'deleteAuthorProfile'])->name('author.profile.delete');
+    Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
+    Route::get('/newsletter/{newsletter}/edit', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
+    Route::put('/newsletter/{newsletter}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
+    Route::delete('/newsletter/{newsletter}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
+
+    // Newsletter send options and confirmation
+    Route::get('/newsletter/{newsletter}/send-options', [NewsLetterController::class, 'sendOptions'])->name('newsletter.send-options');
+    Route::post('/newsletter/{newsletter}/send-confirm', [NewsLetterController::class, 'sendConfirm'])->name('newsletter.send.confirm');
+    Route::get('/newsletter/{newsletter}/test-send', [NewsLetterController::class, 'testSend'])->name('newsletter.test-send');
+    Route::post('/newsletter/{newsletter}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');
 
 
 });
@@ -273,64 +290,7 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.subm
 //about us route
 Route::get('/about', function () { return view('about_us.about_us'); })->name('about');
 
-// Test queue functionality
-Route::get('/test-queue', function(){
-    try {
-        $newsletter = \App\Models\Newsletter::first();
-        
-        if (!$newsletter) {
-            return 'No newsletter found in database. Please create a newsletter first.';
-        }
-        
-        // Test basic job dispatch
-        \App\Jobs\SendNewsletterJob::dispatch($newsletter);
-        
-        return 'Newsletter job dispatched! Check queue worker output. Newsletter ID: ' . $newsletter->id;
-    } catch (Exception $e) {
-        return 'Error: ' . $e->getMessage();
-    }
-});
-
-// Test individual subscriber job
-Route::get('/test-subscriber-job', function(){
-    try {
-        $newsletter = \App\Models\Newsletter::first();
-        
-        if (!$newsletter) {
-            return 'No newsletter found in database.';
-        }
-        
-        $author = $newsletter->author->user ?? (object)['name' => 'Test Author', 'email' => 'author@test.com'];
-        $subscriber = (object)['email' => 'motx98990@gmail.com', 'name' => 'Test Subscriber'];
-        
-        \App\Jobs\SendNewsletterToSubscriberJob::dispatch($newsletter, $subscriber, $author);
-        
-        return 'Subscriber job dispatched! Check queue worker output.';
-    } catch (Exception $e) {
-        return 'Error: ' . $e->getMessage();
-    }
-});
-
-// Monitor queue status
-Route::get('/queue-status', function(){
-    $pending = DB::table('jobs')->count();
-    $failed = DB::table('failed_jobs')->count();
-    $processing = DB::table('jobs')->where('reserved_at', '!=', null)->count();
-    
-    return response()->json([
-        'pending_jobs' => $pending,
-        'failed_jobs' => $failed,
-        'processing_jobs' => $processing,
-        'status' => $pending > 0 ? 'Jobs pending' : 'Queue empty',
-        'recommendations' => [
-            'Make sure queue worker is running: php artisan queue:work',
-            'Check failed jobs: php artisan queue:failed',
-            'Monitor logs: tail -f storage/logs/laravel.log'
-        ]
-    ]);
-});
-
-// Test mailable directly (without queue)
+// Test mailable directly (synchronous email sending)
 Route::get('/test-mailable', function(){
     try {
         $newsletter = \App\Models\Newsletter::first() ?? (object)[
@@ -355,59 +315,11 @@ Route::get('/test-mailable', function(){
         Mail::to('motx98990@gmail.com')
             ->send(new \App\Mail\NewsletterEmail($newsletter, $author));
         
-        return 'Mailable sent directly (no queue)!';
+        return 'Newsletter sent successfully (synchronous)!';
     } catch (Exception $e) {
         return 'Error: ' . $e->getMessage();
     }
 });
-// Test queue functionality with logging
-Route::get('/test-queue-with-logging', function(){
-    try {
-        $newsletter = \App\Models\Newsletter::first();
-        
-        if (!$newsletter) {
-            return 'No newsletter found in database.';
-        }
-        
-        Log::info('About to dispatch newsletter job', ['newsletter_id' => $newsletter->id]);
-        
-        \App\Jobs\SendNewsletterJob::dispatch($newsletter);
-        
-        Log::info('Newsletter job dispatched successfully', ['newsletter_id' => $newsletter->id]);
-        
-        // Check if job was actually created
-        $jobCount = DB::table('jobs')->count();
-        
-        return "Job dispatched! Newsletter ID: {$newsletter->id}. Jobs in queue: {$jobCount}";
-        
-    } catch (Exception $e) {
-        Log::error('Failed to dispatch newsletter job', ['error' => $e->getMessage()]);
-        return 'Error: ' . $e->getMessage();
-    }
-});
-// Add this route after your existing queue routes
-Route::get('/queue-monitor', function(){
-    $pending = DB::table('jobs')->count();
-    $failed = DB::table('failed_jobs')->count();
-    $processing = DB::table('jobs')->where('reserved_at', '!=', null)->count();
-    
-    $recentJobs = DB::table('jobs')
-        ->select('queue', 'payload', 'created_at')
-        ->orderBy('created_at', 'desc')
-        ->limit(5)
-        ->get();
-    
-    $failedJobs = DB::table('failed_jobs')
-        ->select('connection', 'queue', 'exception', 'failed_at')
-        ->orderBy('failed_at', 'desc')
-        ->limit(5)
-        ->get();
-    
-    return view('queue-monitor', compact('pending', 'failed', 'processing', 'recentJobs', 'failedJobs'));
-})->name('queue.monitor');
 
-Route::get('/test-simple-job', function(){
-    \App\Jobs\TestJob::dispatch();
-    return 'Simple test job dispatched!';
-});
+
 

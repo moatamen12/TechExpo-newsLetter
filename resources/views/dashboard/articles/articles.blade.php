@@ -40,8 +40,8 @@
 <section class="container-fluid p-5">
     <div class="m-2">
         <x-dashboard-header 
-            title="Your Articles and NewsLetters" 
-            description="All your Content is in hear in one place to handele" 
+            title="Articles " 
+            description="All your Articles is in hear in one place to handele" 
             :btn="[$CreateBTN]">
         </x-dashboard-header>
         {{-- Add this section to display session messages --}}
