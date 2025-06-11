@@ -1,9 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Profile')
 @section('content')
-@php 
-    // dd('$savedArticles'); 
-@endphp
+
 <section class="container-fluid p-3">
         {{-- Display Validation Errors --}}
     @if ($errors->any())
@@ -51,8 +49,8 @@
                                             <div class="text-center mb-3"> {{-- Centered user info and added bottom margin --}}
                                                 <h2 class="mb-1" style="font-weight: 600;">HI! {{$user_name}}</h2> {{-- Adjusted margin --}}
                                                 <p class="text-muted mb-2" style="font-size: 0.9rem;">{{$user_email}}</p> {{-- Adjusted margin --}}
-                                                {{-- Add Become a Writer button  {{ route('writer.registration.form') }}--}}
-                                                <a href="#" class="btn btn-subscribe btn-sm m-3">Become a Writer</a> 
+                                                {{-- Add Become a Writer button --}}
+                                                <a href="{{ route('writer.registration.form') }}" class="btn btn-subscribe btn-sm m-3">Become a Writer</a> 
                                                 <p class="text-muted mt-1" style="font-size: 0.85rem;">Feel Free To edit Your Profile</p> {{-- Changed to <p>, adjusted style --}}
                                             </div>
                                             

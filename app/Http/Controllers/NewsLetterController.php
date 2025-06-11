@@ -387,10 +387,11 @@ class NewsLetterController extends Controller
     
     public function show(Newsletter $newsletter)
     {
-        $currentProfileId = $this->getCurrentUser();
+        dd($newsletter);
 
-        dd($newsletter->id);
+        $currentProfileId = $this->getCurrentUser();
         if ($newsletter->author_id !== $currentProfileId) {
+
             Log::warning('Unauthorized access attempt to newsletter show page.', [
                 'newsletter_id' => $newsletter->id,
                 'newsletter_author_id' => $newsletter->author_id,

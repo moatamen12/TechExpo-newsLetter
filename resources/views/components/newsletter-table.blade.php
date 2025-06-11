@@ -1,5 +1,4 @@
 @props(['vars','tableID'])
-{{-- @php dd($vars); @endphp --}}
 <table class="table table-hover" id="{{ $tableID }}">
     <thead>
         <tr>

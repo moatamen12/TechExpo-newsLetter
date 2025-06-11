@@ -112,6 +112,10 @@ Route::get('/test-send-newsletter', function(){
     }
 })->name('test.newsletter.send');
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/become-writer', [ProfilesController::class, 'showWriterForm'])->name('writer.registration.form');
+    Route::post('/become-writer', [ProfilesController::class, 'processWriterRegistration'])->name('writer.registration.submit');
+});
 
 
 

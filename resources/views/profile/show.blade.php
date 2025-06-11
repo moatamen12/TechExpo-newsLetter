@@ -85,11 +85,7 @@
         <hr>
         @if($articles && $articles->count() > 0)
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4"> {{-- Using Bootstrap grid for layout --}}
-                @foreach($articles as $article)
-                    {{-- @php dd($article); @endphp --}}
-                    {{-- Each article card --}}
 
-                    {{-- </div> --}}
                     <div class="col"> {{-- Each card in a column --}}
                         <x-card_vertical :article="$article" />
                     </div>

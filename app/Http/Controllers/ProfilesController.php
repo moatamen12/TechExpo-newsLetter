@@ -199,7 +199,6 @@ class ProfilesController extends Controller
     {
         $user = Auth::user();
 
-        // Validation rules - removed 'title' field
         $rules = [
             'profile_photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
             'name' => ['required', 'string', 'min:2', 'max:255'],
@@ -245,7 +244,6 @@ class ProfilesController extends Controller
 
         $user->save();
 
-        // Update user profile - removed title field
         $profile = $user->userProfile;
         
         // Handle profile photo upload
@@ -260,7 +258,6 @@ class ProfilesController extends Controller
             $profile->profile_photo = $profilePhotoPath;
         }
 
-        // Update profile fields (removed title)
         $profile->bio = $validatedData['bio'] ?? $profile->bio;
         $profile->work = $validatedData['work'] ?? $profile->work;
         $profile->website = $validatedData['website'] ?? $profile->website;
@@ -476,6 +473,128 @@ class ProfilesController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->route('home')->with('error', 'An error occurred while trying to delete your account. Please contact support.');
+        }
+    }
+
+    /**
+     * Show the writer registration form
+     */
+    public function showWriterForm()
+    {
+        $user = Auth::user();
+        
+        // Check if user already has a profile
+        if ($user->userProfile) {
+            return redirect()->route('dashboard')->with('info', 'You are already a writer!');
+        }
+        
+        return view('profile.become_writer');
+    }
+
+    /**
+     * Process writer registration
+     */
+    public function processWriterRegistration(Request $request)
+    {
+        $user = Auth::user();
+        
+        // Check if user already has a profile
+        if ($user->userProfile) {
+            return redirect()->route('dashboard')->with('info', 'You are already a writer!');
+        }
+
+        // Validation rules
+        $rules = [
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'work' => ['nullable', 'string', 'max:255'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'social_links' => ['nullable', 'array'],
+            'social_links.*' => ['nullable', 'url', 'max:255'],
+            'social_active' => ['nullable', 'array'],
+            'skip_details' => ['nullable', 'boolean']
+        ];
+
+        $messages = [
+            'profile_photo.image' => 'Profile photo must be an image.',
+            'profile_photo.mimes' => 'Profile photo must be a JPEG, JPG, or PNG file.',
+            'profile_photo.max' => 'Profile photo must not exceed 2MB.',
+            'bio.max' => 'Bio must not exceed 1000 characters.',
+            'work.max' => 'Work field must not exceed 255 characters.',
+            'website.url' => 'Website must be a valid URL.',
+            'social_links.*.url' => 'Social media links must be valid URLs.',
+        ];
+
+        // If user chooses to skip, create minimal profile
+        if ($request->has('skip_details')) {
+            $this->createMinimalWriterProfile($user);
+            return redirect()->route('dashboard')->with('success', 'Welcome to your writer dashboard! You can update your profile details anytime.');
+        }
+
+        $validatedData = $request->validate($rules, $messages);
+
+        // Create writer profile with provided details
+        $this->createWriterProfile($user, $validatedData, $request);
+
+        return redirect()->route('dashboard')->with('success', 'Welcome to your writer dashboard! Your profile has been created successfully.');
+    }
+
+    /**
+     * Create minimal writer profile
+     */
+    private function createMinimalWriterProfile($user)
+    {
+        UserProfiles::create([
+            'user_id' => $user->user_id,
+            'profile_photo' => null,
+            'bio' => null,
+            'work' => null,
+            'website' => null,
+            'followers_count' => 0,
+            'num_articles' => 0,
+            'reactions_count' => 0,
+            'work' => null
+        ]);
+    }
+
+    /**
+     * Create writer profile with details
+     */
+    private function createWriterProfile($user, $validatedData, $request)
+    {
+        // Handle profile photo upload
+        $profilePhotoPath = null;
+        if ($request->hasFile('profile_photo')) {
+            $profilePhotoPath = $request->file('profile_photo')->store('profile_photos', 'public');
+        }
+
+        // Create user profile
+        $profile = UserProfiles::create([
+            'user_id' => $user->user_id,
+            'profile_photo' => $profilePhotoPath,
+            'bio' => $validatedData['bio'],
+            'work' => $validatedData['work'],
+            'website' => $validatedData['website'],
+            'followers_count' => 0,
+            'num_articles' => 0,
+            'reactions_count' => 0,
+            'work' => null
+        ]);
+
+        // Handle social links
+        if ($request->has('social_links')) {
+            foreach ($request->social_links as $platform => $url) {
+                if (!empty($url)) {
+                    $isActive = isset($request->social_active[$platform]) ? true : false;
+                    
+                    SocialLink::create([
+                        'user_id' => $user->user_id,
+                        'platform' => $platform,
+                        'url' => $url,
+                        'is_active' => $isActive
+                    ]);
+                }
+            }
         }
     }
 }
