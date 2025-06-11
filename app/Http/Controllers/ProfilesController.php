@@ -125,7 +125,6 @@ class ProfilesController extends Controller
 
         $authorUser = User::with('userProfile')
                            ->find($authorProfile->user_id); 
-        // dd($authorUser);
         if (!$authorUser) {
             return redirect()->back()->with('error', 'User not found for this profile.');
         }

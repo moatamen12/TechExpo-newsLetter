@@ -121,6 +121,7 @@ Route::get('/articles',[ArticlesController::class, 'index'])->name('articles');
 Route::get('/articles/search', [ArticlesController::class, 'search'])->name('articles.search'); // New route for search
 // to show the article by it's id
 Route::get('/articles/{article:article_id}', [ArticlesController::class, 'show'])->name('articles.show');
+
 // article rout that uses the medal ware 
 Route::middleware('auth')->group(function () {
     // Comments routes
@@ -163,27 +164,37 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::get('/newsletters/{id}', [NewsLetterController::class, 'show'])->name('newsletters.show');//show a newsletter by id
 
     Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
-    Route::get('/dashboard/newsletter/edit/{newsletter_id}', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
-    Route::patch('/dashboard/newsletter/update/{newsletter_id}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
-    Route::delete('/dashboard/newsletter/{newsletter_id}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
-    Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
-    Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
+    // Route::get('/dashboard/newsletter/edit/{newsletter_id}', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
+    // Route::patch('/dashboard/newsletter/update/{newsletter_id}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
+    // Route::delete('/dashboard/newsletter/{newsletter_id}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
+    // Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
+    // Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
+    
     //subscribers management
     Route::get('/dashboard/subscribers', [NewsLetterController::class, 'subscribers'])->name('dashboard.subscribers');
     Route::delete('/dashboard/subscribers/{id}', [NewsLetterController::class, 'removeSubscriber'])->name('subscriber.remove');
     Route::delete('/dashboard/subscribers/bulk-remove', [NewsLetterController::class, 'bulkRemoveSubscribers'])->name('subscribers.bulk-remove');
     Route::get('/dashboard/subscribers/export', [NewsLetterController::class, 'exportSubscribers'])->name('dashboard.subscribers.export');
 
+    //author profile 
+    // Author profile route (for when authors want to view their own profile)
+    Route::get('/profile/author', [ProfilesController::class, 'authorProfile'])->name('author.profile.show');
+
+    //updating author profile
+    Route::post('/profile/author/update', [ProfilesController::class, 'updateAuthorProfile'])->name('author.profile.update');
+
+    //deleting author profile
+    Route::delete('/profile/author/delete', [ProfilesController::class, 'deleteAuthorProfile'])->name('author.profile.delete');
 
 
     // Newsletter preview route
-    Route::get('/newsletter/{id}/preview', [NewsLetterController::class, 'preview'])->name('newsletter.preview');
+    Route::get('/newsletter/{id}/preview', [NewsLetterController::class, 'preview'])->name('newsletter.preview');   
     // Newsletter send route
     Route::post('/newsletter/{id}/send', [NewsLetterController::class, 'sendNewsletter'])->name('newsletter.send');
     //for the newsletter management
     Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
     Route::get('/dashboard/newsletter/create', [NewsLetterController::class, 'create'])->name('newsletter.create'); //create a email newsletter
-    Route::get('/newsletters/{newsletter}', [NewsLetterController::class, 'show'])->name('newsletter.show');//show a newsletter by id
+    Route::get('/newsletters/{newsletter_id}', [NewsLetterController::class, 'show'])->name('newsletter.show');//show a newsletter by id
 
     Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
     Route::get('/newsletter/{newsletter}/edit', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
@@ -204,48 +215,19 @@ Route::get('/profile/{profileID}', [ProfilesController::class, 'show'])->name('p
 //profile route
 Route::middleware(['auth'])->group(function () {
     // Main profile route - shows appropriate profile based on user type
-    Route::get('/profile', [ProfilesController::class, 'index'])
-        ->can('accessProfile') 
+    Route::get('/profile', [ProfilesController::class, 'index']) 
         ->name('profile');
 
     // Reader profile management routes
-    Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
-        ->can('accessProfile') 
+    Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile']) 
         ->name('profile.update');
-    Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
-        ->can('accessProfile') 
+
+    Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile']) 
         ->name('profile.delete');
     
-    // Author profile route (for when authors want to view their own profile)
-    Route::get('/profile/author', [ProfilesController::class, 'authorProfile'])
-        ->can('accessProfile')
-        ->name('author.profile.show');
 });
 
-// // route to the profile page
-// Route::get('/profile',[ProfilesController::class,'index'])
-//                       ->middleware('auth')  
-//                       ->can('accessProfile') 
-//                       ->name('profile');
 
-
-
-// //reader profile
-// Route::get('/profile/reader_profile',[ProfilesController::class,'index'])
-//                       ->middleware('auth')  
-//                       ->can('accessProfile') 
-//                       ->name('reader_profile');
-
-// //edit reader profile 
-// Route::post('/profile/update', [ProfilesController::class, 'updateReaderProfile'])
-//                       ->middleware('auth')  
-//                       ->can('accessProfile') 
-//                       ->name('profile.update');
-// //delet reader acount 
-// Route::delete('/profile/delete', [ProfilesController::class, 'deletReaderProfile'])
-//                       ->middleware('auth')
-//                       ->can('accessProfile') 
-//                       ->name('profile.delete');
 
 
 

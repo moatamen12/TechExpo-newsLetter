@@ -39,15 +39,6 @@ class AppServiceProvider extends ServiceProvider
             return Response::deny('You must be logged in to access this page.');
         });
 
-        //for the profile access
-        Gate::define('accessProfile', function (User $user){
-            if($user->exists()){
-                return Response::allow();
-            }
-            return Response::deny('You must be logged in to access this page.');
-        });
-
-
         // Share categories with all views, or specific views if preferred
         View::composer('components.sub_header', function ($view) {
             $view->with('filterCategories', Categorie::orderBy('name')->get());

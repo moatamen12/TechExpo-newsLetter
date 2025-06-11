@@ -18,11 +18,25 @@ use Illuminate\Support\Facades\Log;
 class NewsLetterController extends Controller
 {
     //get the current user profile id
-    public function getCorrentUser():int
+    public function getCurrentUser(): int // Corrected spelling and return type
     {
-        $user = Auth::id();
-        $profile_id = UserProfiles::where('user_id', $user)->first()->profile_id;
-        return $profile_id;
+        $userId = Auth::id();
+        if (!$userId) {
+            // This should ideally be caught by auth middleware earlier
+            Log::warning('Attempted to get current user profile ID without authenticated user.');
+            abort(401, 'User not authenticated.');
+        }
+
+        $userProfile = UserProfiles::where('user_id', $userId)->first();
+
+        if (!$userProfile || !isset($userProfile->profile_id)) {
+            Log::error('User profile not found or profile_id is missing for user_id: ' . $userId, [
+                'user_id' => $userId,
+                'user_profile_found' => $userProfile ? 'yes' : 'no',
+            ]);
+            abort(500, 'User profile configuration error. Please contact support.');
+        }
+        return (int) $userProfile->profile_id; // Ensure it's an integer
     }
 
     public function create()
@@ -36,28 +50,30 @@ class NewsLetterController extends Controller
         $request->validate([
             'title' => 'required|string|min:10|max:100',
             'summary' => 'required|string|min:30|max:300',
-            'content' => 'required|string',
+            'content' => 'required|string', // Assuming content comes from editor or template logic handled elsewhere if 'content_method' is used
             'category_id' => 'required|exists:categories,category_id',
             'send_option' => 'required|in:now,scheduled,draft',
             'scheduled_at' => 'required_if:send_option,scheduled|nullable|date|after:now',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            // Add validation for content_method, html_template, edit_template if they are part of this form
         ]);
 
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser(); // Use corrected method name
 
         // Handle featured image upload
         $imagePath = null;
         if ($request->hasFile('featured_image')) {
             $image = $request->file('featured_image');
             $filename = time() . Auth::id() . '_' . $image->getClientOriginalName();
-            $imagePath = 'featured_images/' . $filename;
-            $image->storeAs('featured_images', $filename,'public');
+            $imagePath = 'featured_images/' . $filename; // Relative path for storage
+            $image->storeAs('public/featured_images', $filename); // Store in storage/app/public/featured_images
+            $imagePath = 'featured_images/' . $filename; // Path to be stored in DB
         }
 
         // Determine newsletter status
         $status = 'draft';
         $scheduled_at = null;
-        $sent_at = null;
+        $sent_at = null; // Initialize sent_at
 
         if ($request->send_option === 'scheduled') {
             $status = 'scheduled';
@@ -65,11 +81,12 @@ class NewsLetterController extends Controller
         } elseif ($request->send_option === 'draft') {
             $status = 'draft';
         }
+        // 'now' option will be handled by redirecting to sendOptions
 
         // Create newsletter
         $newsletter = Newsletter::create([
             'title' => $request->title,
-            'content' => $request->content,
+            'content' => $request->content, // Ensure content is correctly sourced
             'summary' => $request->summary,
             'author_id' => $profile_id,
             'category_id' => $request->category_id,
@@ -77,18 +94,20 @@ class NewsLetterController extends Controller
             'status' => $status,
             'scheduled_at' => $scheduled_at,
             'sent_at' => $sent_at,
+            // Add recipient_type if it's determined at this stage, otherwise it's set in sendOptions/sendConfirm
         ]);
 
         // Handle different send options
         if ($request->send_option === 'now') {
             // Redirect to send options page
-            return redirect()->route('newsletter.send-options', $newsletter->id);
+            return redirect()->route('newsletter.send-options', $newsletter->id)
+                             ->with('success', 'Newsletter draft created. Please configure send options.');
         } elseif ($request->send_option === 'scheduled') {
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been scheduled successfully!');
-        } else {
+        } else { // draft
             return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been saved as draft!');
+                ->with('success', 'Newsletter has been saved as a draft.');
         }
     }
 
@@ -97,14 +116,20 @@ class NewsLetterController extends Controller
      */
     public function sendOptions(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to newsletter send options.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
 
         // Get subscriber counts for display
-        $allSubscribers = Subscriber::count();
-        $categorySubscribers = Subscriber::where('author_id', $newsletter->author_id)->count();
+        $allSubscribers = UserFollower::count(); // Count all users who can be followed
+        $categorySubscribers = UserFollower::where('following_id', $newsletter->author_id)->count(); // Followers of the author
         
         return view('dashboard.newsletter.send-options', compact('newsletter', 'allSubscribers', 'categorySubscribers'));
     }
@@ -114,16 +139,22 @@ class NewsLetterController extends Controller
      */
     public function sendConfirm(Request $request, Newsletter $newsletter)
     {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to confirm send newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
+            abort(403, 'Unauthorized access to newsletter');
+        }
+
         $request->validate([
             'recipient_type' => 'required|in:all,category,test',
             'send_time' => 'required|in:immediate,scheduled',
             'scheduled_at' => 'required_if:send_time,scheduled|nullable|date|after:now',
         ]);
-
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
-            abort(403, 'Unauthorized access to newsletter');
-        }
 
         // Update newsletter with recipient type and timing
         $updateData = [
@@ -141,7 +172,7 @@ class NewsLetterController extends Controller
 
         if ($request->send_time === 'immediate') {
             // Send immediately
-            $this->sendNewsletterSync($newsletter);
+            $this->sendNewsletterSync($newsletter); // Ensure this method exists and works
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been sent successfully!');
         } else {
@@ -247,20 +278,26 @@ class NewsLetterController extends Controller
      */
     public function send(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to send newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
 
         // Send the newsletter synchronously
-        $success = $this->sendNewsletterSync($newsletter);
+        $success = $this->sendNewsletterSync($newsletter); // Ensure this method exists
         
         if ($success) {
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been sent successfully!');
         } else {
             return redirect()->route('dashboard.newsletter')
-                ->with('error', 'Failed to send newsletter. Please check logs for details.');
+                ->with('error', 'Failed to send newsletter. Please check logs.');
         }
     }
 
@@ -269,8 +306,14 @@ class NewsLetterController extends Controller
      */
     public function testSend(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to test send newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
 
@@ -328,7 +371,7 @@ class NewsLetterController extends Controller
     }
 
     public function newsletter(Request $request){
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser();
         
         $newsletters = Newsletter::with('author')
             ->where('author_id', $profile_id)
@@ -344,8 +387,16 @@ class NewsLetterController extends Controller
     
     public function show(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter (optional security check)
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+
+        dd($newsletter->id);
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to newsletter show page.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
         
@@ -357,15 +408,21 @@ class NewsLetterController extends Controller
      */
     public function edit(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to edit newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
         
         // Only allow editing of draft and scheduled newsletters
         if (!in_array($newsletter->status, ['draft', 'scheduled'])) {
             return redirect()->route('newsletter.show', $newsletter->id)
-                ->with('error', 'Only draft and scheduled newsletters can be edited.');
+                             ->with('error', 'Only draft or scheduled newsletters can be edited.');
         }
         
         $categories = Categorie::orderBy('name')->get();
@@ -377,15 +434,21 @@ class NewsLetterController extends Controller
      */
     public function update(Request $request, Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to update newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
         
         // Only allow editing of draft and scheduled newsletters
         if (!in_array($newsletter->status, ['draft', 'scheduled'])) {
             return redirect()->route('newsletter.show', $newsletter->id)
-                ->with('error', 'Only draft and scheduled newsletters can be edited.');
+                             ->with('error', 'Only draft or scheduled newsletters can be edited.');
         }
 
         $request->validate([
@@ -408,8 +471,10 @@ class NewsLetterController extends Controller
             
             $image = $request->file('featured_image');
             $filename = time() . Auth::id() . '_' . $image->getClientOriginalName();
-            $imagePath = 'featured_images/' . $filename;
-            $image->storeAs('featured_images', $filename, 'public');
+            $imagePath = 'featured_images/' . $filename; // Relative path for storage
+            $image->storeAs('public/featured_images', $filename); // Store in storage/app/public/featured_images
+            $imagePath = 'featured_images/' . $filename; // Path to be stored in DB
+
         } elseif ($request->has('remove_featured_image') && $request->remove_featured_image) {
             // Remove featured image
             if ($newsletter->featured_image) {
@@ -436,8 +501,14 @@ class NewsLetterController extends Controller
      */
     public function destroy(Newsletter $newsletter)
     {
-        // Check if user owns this newsletter
-        if ($newsletter->author_id !== $this->getCorrentUser()) {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to delete newsletter.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
         
@@ -463,7 +534,7 @@ class NewsLetterController extends Controller
      */
     public function subscribers(Request $request)
     {
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser();
         // Use UserFollower instead of Subscriber
         $query = UserFollower::with(['follower.userProfile'])
             ->where('following_id', $profile_id);
@@ -522,7 +593,7 @@ class NewsLetterController extends Controller
      */
     public function removeSubscriber($id)
     {
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser();
         
         // Find the follower relationship
         $followerRelation = UserFollower::where('id', $id)
@@ -545,7 +616,7 @@ class NewsLetterController extends Controller
             'subscriber_ids.*' => 'exists:subscribers,id'
         ]);
         
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser();
         
         $count = Subscriber::whereIn('id', $request->subscriber_ids)
             ->where('author_id', $profile_id)
@@ -560,7 +631,7 @@ class NewsLetterController extends Controller
      */
     public function exportSubscribers(Request $request)
     {
-        $profile_id = $this->getCorrentUser();
+        $profile_id = $this->getCurrentUser();
         
         $query = Subscriber::with(['user.userProfile'])
             ->where('author_id', $profile_id);

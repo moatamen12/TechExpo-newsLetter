@@ -14,7 +14,6 @@ class CommentController extends Controller
             'comment' => 'required|string|max:1000',
             'parent_id' => 'nullable|exists:comments,comment_id'
         ]);
-        // dd($request->all());
 
         $comment = new Comment();
         $comment->user_id = Auth::id();
@@ -22,7 +21,6 @@ class CommentController extends Controller
         $comment->content = $request->input('comment');
         $comment->parent_id = $request->input('parent_id'); // Will be null for top-level comments
         $comment->save();
-        // dd($comment);
 
         return redirect()->back()->with('success', 'Comment added successfully!');
     }

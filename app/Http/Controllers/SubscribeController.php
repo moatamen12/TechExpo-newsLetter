@@ -37,7 +37,6 @@ class SubscribeController extends Controller
         $validated = $validator->validated();
 
 
-        // dd($validated);
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['Subemail'],

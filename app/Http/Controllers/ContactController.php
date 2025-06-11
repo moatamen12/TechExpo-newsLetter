@@ -40,7 +40,6 @@ class ContactController extends Controller
         ]);
         //if any of the validation fails
         if ($validator->fails()) {
-            // dd($validator);
             return redirect()->back()->withErrors($validator)->withInput();
         }
 

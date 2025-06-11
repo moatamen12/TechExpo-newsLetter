@@ -1,4 +1,5 @@
 @props(['vars','tableID'])
+{{-- @php dd($vars); @endphp --}}
 <table class="table table-hover" id="{{ $tableID }}">
     <thead>
         <tr>
@@ -12,7 +13,7 @@
     </thead>
     <tbody class="table-group-divider" id="{{ $tableID }}-content">
         @forelse ($vars as $newsletter)
-            <tr class="clickable-row" data-href="{{ route('newsletters.show', $newsletter->id) }}">
+            <tr class="clickable-row" data-href="{{ route('newsletter.show', $newsletter->id) }}">
                 <td>
                     <div class="d-flex align-items-center">
                         @if($newsletter->featured_image)
@@ -28,7 +29,7 @@
                         @endif
                         <div>
                             <h6 class="mb-0">{{ Str::limit($newsletter->title, 40) }}</h6>
-                            <small class="text-muted">{{ Str::limit($newsletter->description ?? strip_tags($newsletter->content), 60) }}</small>
+                            <small class="text-muted">{{ Str::limit($newsletter->summary ?? strip_tags($newsletter->content), 60) }}</small>
                         </div>
                     </div>
                 </td>
@@ -75,25 +76,28 @@
                             <bold>•••</bold>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('newsletters.show', $newsletter->id) }}">View</a></li>
+                            
+                            <li><a class="dropdown-item" href="{{ route('newsletter.show', $newsletter->id) }}">View</a></li>
                             @if($newsletter->status === 'draft')
-                                <li><a class="dropdown-item" href="#">Edit</a></li>
-                                <li><a class="dropdown-item" href="#">Send</a></li>
+                                <li><a class="dropdown-item" href="{{ route('newsletter.edit', $newsletter->id) }}">Edit</a></li>
+                                <li><a class="dropdown-item" href="{{ route('newsletter.send-options', $newsletter->id) }}">Send</a></li>
                             @endif
-                            <li>
-                                <form action="#" method="POST" class="dropdown-item text-danger delete-item-form">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-danger border-0">Delete</button>
-                                </form>
-                            </li>
+                            @if(in_array($newsletter->status, ['draft', 'scheduled']))
+                                <li>
+                                    <form action="{{ route('newsletter.destroy', $newsletter->id) }}" method="POST" class="dropdown-item text-danger delete-item-form" onsubmit="return confirm('Are you sure you want to delete this newsletter?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-danger border-0 bg-transparent">Delete</button>
+                                    </form>
+                                </li>
+                            @endif
                         </ul>
                     </div>
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="text-center py-3">
+                <td colspan="6" class="text-center py-3">
                     <div class="alert alert-warning mb-0">
                         <i class="fas fa-newspaper fa-2x text-muted mb-3 d-block"></i>
                         No newsletters found.

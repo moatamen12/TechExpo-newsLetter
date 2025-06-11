@@ -12,7 +12,6 @@ class LoginController extends Controller
 {
     public function create()
     {
-        // dd(session()->all()); 
         return view('login-subscribe.login_subscripe', ['activeTab' => 'login']);
     }
     public function store(Request $request)

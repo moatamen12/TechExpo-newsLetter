@@ -285,7 +285,6 @@ class ArticlesController extends Controller
         if (!$profile || $article->author_id !== $profile->profile_id) {
             return redirect()->route('dashboard.articles')->with('error', 'You are not authorized to edit this article.');
         }
-        // dd($article->author_id);
         if (!$article) 
         {
             return redirect()->route('dashboard.articles')->with('error', 'Article not found.');
@@ -323,7 +322,6 @@ class ArticlesController extends Controller
                 ->withErrors($validator)
                 ->withInput();
         }
-        // dd($request->all());
         // Get validated data if validation passes
         $validated = $validator->validated(); //validated data after validation passes
 
@@ -338,7 +336,6 @@ class ArticlesController extends Controller
             'updated_at' => now(),
         ];
 
-        // dd($updateData);
 
         if ($request->hasFile('featured_image')) {
             // Delete old image if it exists
@@ -357,7 +354,6 @@ class ArticlesController extends Controller
             }
             $updateData['featured_image_url'] = null;
         }
-        // dd($newImagePath);
 
         // Set published_at only if status is 'published' and it wasn't published before.
         if ($validated['status'] === 'published' && is_null($article->published_at)) {
