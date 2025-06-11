@@ -11,8 +11,10 @@ use App\Models\ArticleLike;
 use App\Models\Comment;
 use App\Models\userSavedArticle;
 use App\Models\userFollower;
+use App\Models\Newsletter; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -28,13 +30,12 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
         $profile_id = $this->getCorrentUser();
         
-        // Get user dashboard data (this was missing!)
+        // Get user dashboard data with real values only
         $userData = $this->user();
         
-        // Get stats data (moved from StatsController)
+        // Get real stats data
         $monthlyData = $this->getMonthlyPerformance($profile_id);
         $audienceGrowth = $this->getAudienceGrowthData($user);
         $topArticles = $this->getTopPerformingArticles($profile_id);
@@ -42,7 +43,7 @@ class DashboardController extends Controller
         $recentActivity = $this->getRecentActivity($profile_id);
         
         return view('dashboard.home', compact(
-            'userData', // Add this line
+            'userData',
             'monthlyData',
             'audienceGrowth',
             'topArticles',
@@ -55,10 +56,9 @@ class DashboardController extends Controller
     {
         $profile_id = $this->getCorrentUser();
 
-        $published = $this->publishedArticles($profile_id);
-        $draft = $this->draftArticles($profile_id);
+        $published = $this->publishedArticles($profile_id, 10, $request);
+        $draft = $this->draftArticles($profile_id, 10, $request);
         
-        // Add allArticles that combines both published and draft
         $allArticles = Article::with(['author.user', 'categorie'])
             ->where('author_id', $profile_id)
             ->orderBy('created_at', 'desc')
@@ -75,26 +75,37 @@ class DashboardController extends Controller
         ]);
     } 
 
-    // get the user information 
+    // get the user information with only real data
     public function user()
     {
         $user = Auth::id();  
         $profile_id = UserProfiles::where('user_id', $user)->first()->profile_id;
 
-        $userProfile = UserProfiles::Select('*')
-        ->with('user')
-        ->where('profile_id', $profile_id)
-        ->first();
+        $userProfile = UserProfiles::with('user')
+            ->where('profile_id', $profile_id)
+            ->first();
     
-        $totalArticles = Article::where('author_id', $profile_id)->count();
-        $totalViews = Article::where('author_id', $profile_id)->sum('view_count') ?? 0;
-        $totalLikes = Article::where('author_id', $profile_id)->sum('like_count') ?? 0;
-        $totalcomment = Article::where('author_id', $profile_id)->sum('comment_count') ?? 0;
+        // Get real data only - no fallbacks to 0
+        $totalArticles = Article::where('author_id', $profile_id)
+            ->where('status', 'published')
+            ->count();
+            
+        $totalViews = Article::where('author_id', $profile_id)
+            ->where('status', 'published')
+            ->sum('view_count') ?: 0;
+            
+        $totalLikes = Article::where('author_id', $profile_id)
+            ->where('status', 'published')
+            ->sum('like_count') ?: 0;
+            
+        $totalComments = Article::where('author_id', $profile_id)
+            ->where('status', 'published')
+            ->sum('comment_count') ?: 0;
 
         // Get actual follower count
         $followersCount = userFollower::where('following_id', $profile_id)->count();
 
-        // Get percentage changes
+        // Get percentage changes with real calculations
         $articlesChange = $this->getArticlePercentageChange($profile_id);
         $viewsChange = $this->getViewsPercentageChange($profile_id);
         $followersChange = $this->getFollowersPercentageChange($profile_id);
@@ -104,59 +115,67 @@ class DashboardController extends Controller
             'totalArticles' => $totalArticles,
             'totalViews' => $totalViews,
             'totalLikes' => $totalLikes,
-            'totalComments' => $totalcomment,
-            'followersCount' => $followersCount, // Add this
+            'totalComments' => $totalComments,
+            'followersCount' => $followersCount,
             'userName' => $userProfile->user->name ?? 'User',
             'userEmail' => $userProfile->user->email ?? '',
-            // Add social media links
-            'socialTwitter' => $userProfile->social_twitter ?? null,
-            'socialLinkedin' => $userProfile->social_linkedin ?? null,
-            'socialGithub' => $userProfile->social_github ?? null,
-            'socialWebsite' => $userProfile->social_website ?? null,
-            'profilePhoto' => $userProfile->profile_photo ?? null,
-            'bio' => $userProfile->bio ?? null,
-            'title' => $userProfile->title ?? null,
-            // Add percentage data
-            'articlesPercentage' => $articlesChange['percentage'] ?? 0,
-            'articlesDirection' => $articlesChange['direction'] ?? 'neutral',
-            'viewsPercentage' => $viewsChange['percentage'] ?? 0,
-            'viewsDirection' => $viewsChange['direction'] ?? 'neutral',
-            'followersPercentage' => $followersChange['percentage'] ?? 0,
-            'followersDirection' => $followersChange['direction'] ?? 'neutral',
-            'reactionsPercentage' => $reactionsChange['percentage'] ?? 0,
-            'reactionsDirection' => $reactionsChange['direction'] ?? 'neutral',
+            'socialTwitter' => $userProfile->social_twitter,
+            'socialLinkedin' => $userProfile->social_linkedin,
+            'socialGithub' => $userProfile->social_github,
+            'socialWebsite' => $userProfile->social_website,
+            'profilePhoto' => $userProfile->profile_photo,
+            'bio' => $userProfile->bio,
+            'title' => $userProfile->title,
+            // Real percentage data
+            'articlesPercentage' => $articlesChange['percentage'],
+            'articlesDirection' => $articlesChange['direction'],
+            'viewsPercentage' => $viewsChange['percentage'],
+            'viewsDirection' => $viewsChange['direction'],
+            'followersPercentage' => $followersChange['percentage'],
+            'followersDirection' => $followersChange['direction'],
+            'reactionsPercentage' => $reactionsChange['percentage'],
+            'reactionsDirection' => $reactionsChange['direction'],
         ];
     }
 
-    // Stats methods (moved from StatsController)
+    // Get monthly performance with real data only
     private function getMonthlyPerformance($authorId)
     {
         $months = [];
         $views = [];
+        $articles = [];
         
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $monthName = $date->format('M');
+            $monthName = $date->format('M Y');
             $months[] = $monthName;
             
+            // Get actual monthly views from published articles
             $monthlyViews = Article::where('author_id', $authorId)
                                  ->whereMonth('created_at', $date->month)
                                  ->whereYear('created_at', $date->year)
                                  ->where('status', 'published')
-                                 ->sum('view_count');
+                                 ->sum('view_count') ?: 0;
+            
+            // Get actual monthly articles published
+            $monthlyArticles = Article::where('author_id', $authorId)
+                                     ->whereMonth('created_at', $date->month)
+                                     ->whereYear('created_at', $date->year)
+                                     ->where('status', 'published')
+                                     ->count();
             
             $views[] = $monthlyViews;
+            $articles[] = $monthlyArticles;
         }
         
         return [
             'months' => $months,
-            'views' => $views
+            'views' => $views,
+            'articles' => $articles
         ];
     }
     
-    /**
-     * Get audience growth data for the last 6 months
-     */
+    // Get real audience growth data
     private function getAudienceGrowthData($user)
     {
         if (!$user->userProfile) {
@@ -169,13 +188,12 @@ class DashboardController extends Controller
         $months = [];
         $followers = [];
         
-        // Get data for the last 6 months
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $monthName = $date->format('M');
+            $monthName = $date->format('M Y');
             $months[] = $monthName;
             
-            // Count followers up to the end of this month
+            // Count actual followers up to the end of this month
             $followerCount = userFollower::where('following_id', $user->userProfile->profile_id)
                 ->where('created_at', '<=', $date->endOfMonth())
                 ->count();
@@ -189,12 +207,13 @@ class DashboardController extends Controller
         ];
     }
     
+    // Get real top performing articles
     private function getTopPerformingArticles($authorId)
     {
         return Article::with(['author.user', 'categorie'])
                      ->where('author_id', $authorId)
                      ->where('status', 'published')
-                     ->orderBy('view_count', 'desc')
+                     ->orderByRaw('(view_count + like_count + comment_count) DESC')
                      ->take(10)
                      ->get()
                      ->map(function($article) {
@@ -203,64 +222,48 @@ class DashboardController extends Controller
                              'title' => $article->title,
                              'author' => $article->author->user->name ?? 'Unknown',
                              'date' => $article->created_at->format('M j, Y'),
-                             'views' => $article->view_count ?? 0,
-                             'likes' => $article->like_count ?? 0,
-                             'comments' => $article->comment_count ?? 0
+                             'views' => $article->view_count ?: 0,
+                             'likes' => $article->like_count ?: 0,
+                             'comments' => $article->comment_count ?: 0
                          ];
                      });
     }
     
+    // Get real category statistics
     private function getCategoryStats($authorId)
     {
         $categories = Categorie::whereHas('articles', function($query) use ($authorId) {
                                 $query->where('author_id', $authorId)
                                       ->where('status', 'published');
                             })
-                            ->with(['articles' => function($query) use ($authorId) {
+                            ->withCount(['articles' => function($query) use ($authorId) {
                                 $query->where('author_id', $authorId)
                                       ->where('status', 'published');
                             }])
+                            ->having('articles_count', '>', 0)
                             ->get()
-                            ->map(function($category) use ($authorId) {
-                                $count = $category->articles()
-                                                 ->where('author_id', $authorId)
-                                                 ->where('status', 'published')
-                                                 ->count();
+                            ->map(function($category) {
                                 return [
                                     'name' => $category->name,
-                                    'count' => $count,
+                                    'count' => $category->articles_count,
                                     'percentage' => 0
                                 ];
-                            })
-                            ->filter(function($item) {
-                                return $item['count'] > 0;
                             });
         
         $total = $categories->sum('count');
         
         if ($total > 0) {
             $categories = $categories->map(function($item) use ($total) {
-                $item['percentage'] = round(($item['count'] / $total) * 100);
+                $item['percentage'] = round(($item['count'] / $total) * 100, 1);
                 return $item;
             });
         }
         
-        return $categories;
+        return $categories->values();
     }
 
-    //gitting the latest article by the user
-    public function TopArticles($limit = 10, $user_id)
-    {   
-        return Article::select('article_id','author_id', 'title', 'status','view_count' ,'created_at','category_id')
-            ->with(['author.user', 'categorie'])
-            ->where('author_id', $user_id)
-            ->orderByRaw('(view_count + like_count + comment_count) DESC')
-            ->take($limit)
-            ->get();
-    }
-
-    //get the published articles
-    public function publishedArticles($user_id,$limit = 10, Request $request = null)
+    //get real published articles
+    public function publishedArticles($user_id, $limit = 10, Request $request = null)
     {   
         $articles = Article::with(['author.user', 'categorie'])
             ->where('author_id', $user_id)
@@ -275,11 +278,10 @@ class DashboardController extends Controller
         return $articles;
     }
 
-    //get the draft articles
-    public function draftArticles($user_id,$limit = 10,Request $request = null)
+    //get real draft articles
+    public function draftArticles($user_id, $limit = 10, Request $request = null)
     {   
-        $articles = Article::select('article_id', 'title', 'status','view_count' ,'category_id','created_at')
-            ->with(['author.user', 'categorie'])
+        $articles = Article::with(['author.user', 'categorie'])
             ->where('author_id', $user_id)
             ->where('status', 'draft')
             ->orderBy('created_at', 'desc')
@@ -292,15 +294,16 @@ class DashboardController extends Controller
         return $articles;
     }
 
+    // Get real recent activity
     private function getRecentActivity($authorId)
     {
         $activities = collect();
         
-        // Get recent articles
+        // Get recent articles - real data only (reduced to 2)
         $recentArticles = Article::where('author_id', $authorId)
                                 ->where('status', 'published')
                                 ->orderBy('created_at', 'desc')
-                                ->take(3)
+                                ->take(2)
                                 ->get()
                                 ->map(function($article) {
                                     return [
@@ -308,45 +311,166 @@ class DashboardController extends Controller
                                         'title' => 'Published Article',
                                         'description' => $article->title,
                                         'time' => $article->created_at->diffForHumans(),
-                                        'created_at' => $article->created_at
+                                        'created_at' => $article->created_at,
+                                        'icon' => 'fas fa-file-alt',
+                                        'color' => 'text-success',
+                                        'url' => route('articles.show', $article->article_id)
                                     ];
                                 });
-        
+    
         $activities = $activities->merge($recentArticles);
         
-        // Get recent followers using userFollower model
+        // Get comprehensive newsletter activities - real data only (reduced quantities)
         try {
-            $recentFollowers = userFollower::with(['follower'])
-                                ->where('following_id', $authorId)
-                                ->orderBy('created_at', 'desc')
-                                ->take(3)
+            $recentNewsletterDrafts = Newsletter::where('author_id', $authorId)
+                                    ->where('status', 'draft')
+                                    ->orderBy('created_at', 'desc')
+                                    ->take(1)
+                                    ->get()
+                                    ->map(function($newsletter) {
+                                        return [
+                                            'type' => 'newsletter_draft',
+                                            'title' => 'Newsletter Draft Created',
+                                            'description' => 'Created draft "' . $newsletter->title . '"',
+                                            'time' => $newsletter->created_at->diffForHumans(),
+                                            'created_at' => $newsletter->created_at,
+                                            'icon' => 'fas fa-edit',
+                                            'color' => 'text-secondary',
+                                            'url' => route('newsletter.show', $newsletter->id),
+                                            'status' => $newsletter->status
+                                        ];
+                                    });
+            
+            // Newsletter scheduling - reduced to 1
+            $recentNewsletterScheduled = Newsletter::where('author_id', $authorId)
+                                    ->where('status', 'scheduled')
+                                    ->orderBy('scheduled_at', 'desc')
+                                    ->take(1)
+                                    ->get()
+                                    ->map(function($newsletter) {
+                                        return [
+                                            'type' => 'newsletter_scheduled',
+                                            'title' => 'Newsletter Scheduled',
+                                            'description' => 'Scheduled "' . $newsletter->title . '" for ' . $newsletter->scheduled_at->format('M j, Y g:i A'),
+                                            'time' => $newsletter->updated_at->diffForHumans(),
+                                            'created_at' => $newsletter->updated_at,
+                                            'icon' => 'fas fa-clock',
+                                            'color' => 'text-warning',
+                                            'url' => route('newsletter.show', $newsletter->id),
+                                            'status' => $newsletter->status,
+                                            'scheduled_for' => $newsletter->scheduled_at->format('M j, Y g:i A')
+                                        ];
+                                    });
+            
+            // Newsletter sending - reduced to 2
+            $recentNewslettersSent = Newsletter::where('author_id', $authorId)
+                                ->where('status', 'sent')
+                                ->orderBy('sent_at', 'desc')
+                                ->take(2)
                                 ->get()
-                                ->map(function($follow) {
+                                ->map(function($newsletter) {
+                                    $successCount = $newsletter->success_count ?? 0;
+                                    $failedCount = $newsletter->failed_count ?? 0;
+                                    $totalCount = $newsletter->recipients_count ?? ($successCount + $failedCount);
+                                    
+                                    $description = 'Sent "' . $newsletter->title . '" to ' . $totalCount . ' subscriber(s)';
+                                    if ($successCount > 0) {
+                                        $description .= ' (' . $successCount . ' successful';
+                                        if ($failedCount > 0) {
+                                            $description .= ', ' . $failedCount . ' failed';
+                                        }
+                                        $description .= ')';
+                                    }
+                                    
                                     return [
-                                        'type' => 'follower',
-                                        'title' => 'New Follower',
-                                        'description' => ($follow->follower->name ?? 'Someone') . ' started following you',
-                                        'time' => $follow->created_at ? $follow->created_at->diffForHumans() : 'Recently',
-                                        'created_at' => $follow->created_at ?? now()
+                                        'type' => 'newsletter_sent',
+                                        'title' => 'Newsletter Sent',
+                                        'description' => $description,
+                                        'time' => $newsletter->sent_at->diffForHumans(),
+                                        'created_at' => $newsletter->sent_at,
+                                        'icon' => 'fas fa-paper-plane',
+                                        'color' => 'text-success',
+                                        'url' => route('newsletter.show', $newsletter->id),
+                                        'status' => $newsletter->status,
+                                        'stats' => [
+                                            'total' => $totalCount,
+                                            'success' => $successCount,
+                                            'failed' => $failedCount
+                                        ]
                                     ];
                                 });
+            
+            // Newsletter failures - reduced to 1
+            $recentNewslettersFailed = Newsletter::where('author_id', $authorId)
+                                    ->where('status', 'failed')
+                                    ->orderBy('updated_at', 'desc')
+                                    ->take(1)
+                                    ->get()
+                                    ->map(function($newsletter) {
+                                        return [
+                                            'type' => 'newsletter_failed',
+                                            'title' => 'Newsletter Send Failed',
+                                            'description' => 'Failed to send "' . $newsletter->title . '"',
+                                            'time' => $newsletter->updated_at->diffForHumans(),
+                                            'created_at' => $newsletter->updated_at,
+                                            'icon' => 'fas fa-exclamation-triangle',
+                                            'color' => 'text-danger',
+                                            'url' => route('newsletter.show', $newsletter->id),
+                                            'status' => $newsletter->status
+                                        ];
+                                    });
+            
+            // Merge all newsletter activities
+            $activities = $activities->merge($recentNewsletterDrafts);
+            $activities = $activities->merge($recentNewsletterScheduled);
+            $activities = $activities->merge($recentNewslettersSent);
+            $activities = $activities->merge($recentNewslettersFailed);
+            
+        } catch (\Exception $e) {
+            Log::warning('Failed to load newsletter activities for dashboard', [
+                'author_id' => $authorId,
+                'error' => $e->getMessage()
+            ]);
+            // Continue without newsletter activities if there's an issue
+        }
+        
+        // Get real followers - reduced to 1
+        try {
+            $recentFollowers = userFollower::with(['follower'])
+                            ->where('following_id', $authorId)
+                            ->orderBy('created_at', 'desc')
+                            ->take(1)
+                            ->get()
+                            ->map(function($follow) {
+                                return [
+                                    'type' => 'follower',
+                                    'title' => 'New Follower',
+                                    'description' => ($follow->follower->name ?? 'Someone') . ' started following you',
+                                    'time' => $follow->created_at->diffForHumans(),
+                                    'created_at' => $follow->created_at,
+                                    'icon' => 'fas fa-user-plus',
+                                    'color' => 'text-info',
+                                    'url' => route('dashboard.subscribers')
+                                ];
+                            });
             
             $activities = $activities->merge($recentFollowers);
         } catch (\Exception $e) {
             // Continue without followers if there's an issue
         }
         
-        // Get recent likes on your articles using raw query if model relationships are problematic
+        // Get real likes - reduced to 1
         try {
             $recentLikes = DB::table('article_likes')
                             ->join('articles', 'article_likes.article_id', '=', 'articles.article_id')
                             ->join('users', 'article_likes.user_id', '=', 'users.user_id')
                             ->where('articles.author_id', $authorId)
                             ->orderBy('article_likes.created_at', 'desc')
-                            ->take(3)
+                            ->take(1)
                             ->select(
                                 'users.name as user_name',
                                 'articles.title as article_title',
+                                'articles.article_id',
                                 'article_likes.created_at'
                             )
                             ->get()
@@ -356,88 +480,35 @@ class DashboardController extends Controller
                                     'title' => 'New Like',
                                     'description' => ($like->user_name ?? 'Someone') . ' liked "' . ($like->article_title ?? 'your article') . '"',
                                     'time' => Carbon::parse($like->created_at)->diffForHumans(),
-                                    'created_at' => Carbon::parse($like->created_at)
+                                    'created_at' => Carbon::parse($like->created_at),
+                                    'icon' => 'fas fa-heart',
+                                    'color' => 'text-danger',
+                                    'url' => route('articles.show', $like->article_id)
                                 ];
                             });
             
             $activities = $activities->merge($recentLikes);
         } catch (\Exception $e) {
-            // If likes table doesn't exist or has issues, continue without likes
+            // Continue without likes
         }
         
-        // Get recent comments on your articles
-        try {
-            $recentComments = Comment::with(['user', 'article'])
-                               ->whereHas('article', function($query) use ($authorId) {
-                                   $query->where('author_id', $authorId);
-                               })
-                               ->orderBy('created_at', 'desc')
-                               ->take(3)
-                               ->get()
-                               ->map(function($comment) {
-                                   return [
-                                       'type' => 'comment',
-                                       'title' => 'New Comment',
-                                       'description' => ($comment->user->name ?? 'Someone') . ' commented on "' . ($comment->article->title ?? 'your article') . '"',
-                                       'time' => $comment->created_at->diffForHumans(),
-                                       'created_at' => $comment->created_at
-                                   ];
-                               });
-            
-            $activities = $activities->merge($recentComments);
-        } catch (\Exception $e) {
-            // Continue without comments if there's an issue
-        }
-        
-        // Get recent saves of your articles
-        try {
-            $recentSaves = userSavedArticle::with(['user', 'article'])
-                            ->whereHas('article', function($query) use ($authorId) {
-                                $query->where('author_id', $authorId);
-                            })
-                            ->orderBy('saved_at', 'desc')
-                            ->take(3)
-                            ->get()
-                            ->map(function($save) {
-                                return [
-                                    'type' => 'save',
-                                    'title' => 'Article Saved',
-                                    'description' => ($save->user->name ?? 'Someone') . ' saved "' . ($save->article->title ?? 'your article') . '"',
-                                    'time' => $save->saved_at->diffForHumans(),
-                                    'created_at' => $save->saved_at
-                                ];
-                            });
-            
-            $activities = $activities->merge($recentSaves);
-        } catch (\Exception $e) {
-            // Continue without saves if there's an issue
-        }
-        
-        // Add some sample activities if no real data
-        if ($activities->isEmpty()) {
-            $activities->push([
-                'type' => 'article',
-                'title' => 'Getting Started',
-                'description' => 'Welcome to your dashboard! Start by creating your first article.',
-                'time' => 'Just now',
-                'created_at' => now()
-            ]);
-        }
-        
-        // Sort by created_at and take latest 5
+        // Only show the last 5 activities - sorted by most recent
         return $activities->sortByDesc('created_at')->take(5)->values();
     }
 
+    // Real percentage calculations
     private function getArticlePercentageChange($authorId)
     {
         $currentMonth = Article::where('author_id', $authorId)
                           ->whereMonth('created_at', now()->month)
                           ->whereYear('created_at', now()->year)
+                          ->where('status', 'published')
                           ->count();
     
         $lastMonth = Article::where('author_id', $authorId)
                        ->whereMonth('created_at', now()->subMonth()->month)
                        ->whereYear('created_at', now()->subMonth()->year)
+                       ->where('status', 'published')
                        ->count();
     
         return $this->calculatePercentageChange($currentMonth, $lastMonth);
@@ -448,33 +519,16 @@ class DashboardController extends Controller
         $currentMonth = Article::where('author_id', $authorId)
                           ->whereMonth('created_at', now()->month)
                           ->whereYear('created_at', now()->year)
-                          ->sum('view_count');
+                          ->where('status', 'published')
+                          ->sum('view_count') ?: 0;
     
         $lastMonth = Article::where('author_id', $authorId)
                        ->whereMonth('created_at', now()->subMonth()->month)
                        ->whereYear('created_at', now()->subMonth()->year)
-                       ->sum('view_count');
+                       ->where('status', 'published')
+                       ->sum('view_count') ?: 0;
     
         return $this->calculatePercentageChange($currentMonth, $lastMonth);
-    }
-
-    private function getFollowersPercentageChange($authorId)
-    {
-        try {
-            $currentMonth = userFollower::where('following_id', $authorId)
-                                  ->whereMonth('created_at', now()->month)
-                                  ->whereYear('created_at', now()->year)
-                                  ->count();
-        
-            $lastMonth = userFollower::where('following_id', $authorId)
-                                ->whereMonth('created_at', now()->subMonth()->month)
-                                ->whereYear('created_at', now()->subMonth()->year)
-                                ->count();
-        
-            return $this->calculatePercentageChange($currentMonth, $lastMonth);
-        } catch (\Exception $e) {
-            return ['percentage' => 0, 'direction' => 'neutral'];
-        }
     }
 
     private function getReactionsPercentageChange($authorId)
@@ -482,27 +536,46 @@ class DashboardController extends Controller
         $currentMonthLikes = Article::where('author_id', $authorId)
                                ->whereMonth('created_at', now()->month)
                                ->whereYear('created_at', now()->year)
-                               ->sum('like_count');
+                               ->where('status', 'published')
+                               ->sum('like_count') ?: 0;
     
         $currentMonthComments = Article::where('author_id', $authorId)
                                   ->whereMonth('created_at', now()->month)
                                   ->whereYear('created_at', now()->year)
-                                  ->sum('comment_count');
+                                  ->where('status', 'published')
+                                  ->sum('comment_count') ?: 0;
     
         $lastMonthLikes = Article::where('author_id', $authorId)
                             ->whereMonth('created_at', now()->subMonth()->month)
                             ->whereYear('created_at', now()->subMonth()->year)
-                            ->sum('like_count');
+                            ->where('status', 'published')
+                            ->sum('like_count') ?: 0;
     
         $lastMonthComments = Article::where('author_id', $authorId)
                                ->whereMonth('created_at', now()->subMonth()->month)
                                ->whereYear('created_at', now()->subMonth()->year)
-                               ->sum('comment_count');
+                               ->where('status', 'published')
+                               ->sum('comment_count') ?: 0;
     
         $currentTotal = $currentMonthLikes + $currentMonthComments;
         $lastTotal = $lastMonthLikes + $lastMonthComments;
     
         return $this->calculatePercentageChange($currentTotal, $lastTotal);
+    }
+
+    private function getFollowersPercentageChange($authorId)
+    {
+        $currentMonth = userFollower::where('following_id', $authorId)
+                      ->whereMonth('created_at', now()->month)
+                      ->whereYear('created_at', now()->year)
+                      ->count();
+
+        $lastMonth = userFollower::where('following_id', $authorId)
+                   ->whereMonth('created_at', now()->subMonth()->month)
+                   ->whereYear('created_at', now()->subMonth()->year)
+                   ->count();
+
+        return $this->calculatePercentageChange($currentMonth, $lastMonth);
     }
 
     private function calculatePercentageChange($current, $previous)

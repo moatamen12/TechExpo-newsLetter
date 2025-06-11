@@ -50,61 +50,44 @@ class NewsLetterController extends Controller
         $request->validate([
             'title' => 'required|string|min:10|max:100',
             'summary' => 'required|string|min:30|max:300',
-            'content' => 'required|string', // Assuming content comes from editor or template logic handled elsewhere if 'content_method' is used
+            'content' => 'required|string',
             'category_id' => 'required|exists:categories,category_id',
             'send_option' => 'required|in:now,scheduled,draft',
-            'scheduled_at' => 'required_if:send_option,scheduled|nullable|date|after:now',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            // Add validation for content_method, html_template, edit_template if they are part of this form
         ]);
 
-        $profile_id = $this->getCurrentUser(); // Use corrected method name
+        $profile_id = $this->getCurrentUser();
 
         // Handle featured image upload
         $imagePath = null;
         if ($request->hasFile('featured_image')) {
             $image = $request->file('featured_image');
             $filename = time() . Auth::id() . '_' . $image->getClientOriginalName();
-            $imagePath = 'featured_images/' . $filename; // Relative path for storage
-            $image->storeAs('public/featured_images', $filename); // Store in storage/app/public/featured_images
-            $imagePath = 'featured_images/' . $filename; // Path to be stored in DB
+            $imagePath = 'featured_images/' . $filename;
+            $image->storeAs('public/featured_images', $filename);
+            $imagePath = 'featured_images/' . $filename;
         }
 
-        // Determine newsletter status
-        $status = 'draft';
-        $scheduled_at = null;
-        $sent_at = null; // Initialize sent_at
-
-        if ($request->send_option === 'scheduled') {
-            $status = 'scheduled';
-            $scheduled_at = $request->scheduled_at;
-        } elseif ($request->send_option === 'draft') {
-            $status = 'draft';
-        }
-        // 'now' option will be handled by redirecting to sendOptions
-
-        // Create newsletter
+        // Always create as draft first
         $newsletter = Newsletter::create([
             'title' => $request->title,
-            'content' => $request->content, // Ensure content is correctly sourced
+            'content' => $request->content,
             'summary' => $request->summary,
             'author_id' => $profile_id,
             'category_id' => $request->category_id,
             'featured_image' => $imagePath,
-            'status' => $status,
-            'scheduled_at' => $scheduled_at,
-            'sent_at' => $sent_at,
-            // Add recipient_type if it's determined at this stage, otherwise it's set in sendOptions/sendConfirm
+            'status' => 'draft', // Always start as draft
+            'scheduled_at' => null,
+            'sent_at' => null,
         ]);
 
-        // Handle different send options
+        // Handle different send options - all go through send-options page
         if ($request->send_option === 'now') {
-            // Redirect to send options page
             return redirect()->route('newsletter.send-options', $newsletter->id)
-                             ->with('success', 'Newsletter draft created. Please configure send options.');
+                             ->with('success', 'Newsletter created. Please configure send options.');
         } elseif ($request->send_option === 'scheduled') {
-            return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been scheduled successfully!');
+            return redirect()->route('newsletter.send-options', $newsletter->id)
+                             ->with('success', 'Newsletter created. Please configure schedule options.');
         } else { // draft
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been saved as a draft.');
@@ -128,15 +111,14 @@ class NewsLetterController extends Controller
         }
 
         // Get follower counts for display - only author's followers
-        $allMyFollowers = UserFollower::where('following_id', $newsletter->author_id)->count(); // All followers of this author
-        $categorySubscribers = $allMyFollowers; // Same as above for now
+        $allMyFollowers = UserFollower::where('following_id', $newsletter->author_id)->count();
         
         // Get the actual followers for selection if needed
         $myFollowers = UserFollower::with(['follower'])
             ->where('following_id', $newsletter->author_id)
             ->get();
         
-        return view('dashboard.newsletter.send-options', compact('newsletter', 'allMyFollowers', 'categorySubscribers', 'myFollowers'));
+        return view('dashboard.newsletter.send-options', compact('newsletter', 'allMyFollowers', 'myFollowers'));
     }
 
     /**
@@ -166,17 +148,18 @@ class NewsLetterController extends Controller
         // Update newsletter with recipient type and timing
         $updateData = [
             'recipient_type' => $request->recipient_type,
-            'status' => $request->send_time === 'scheduled' ? 'scheduled' : 'sent'
         ];
 
-        // Store selected followers if specified - using selected_subscribers column
+        // Store selected followers if specified
         if ($request->recipient_type === 'selected_followers' && $request->selected_followers) {
             $updateData['selected_subscribers'] = json_encode($request->selected_followers);
         }
 
         if ($request->send_time === 'scheduled') {
+            $updateData['status'] = 'scheduled';
             $updateData['scheduled_at'] = $request->scheduled_at;
         } else {
+            $updateData['status'] = 'sent';
             $updateData['sent_at'] = now();
         }
 
@@ -191,6 +174,46 @@ class NewsLetterController extends Controller
             // Schedule for later
             return redirect()->route('dashboard.newsletter')
                 ->with('success', 'Newsletter has been scheduled successfully!');
+        }
+    }
+
+    /**
+     * Send a scheduled newsletter immediately
+     */
+    public function sendNow(Newsletter $newsletter)
+    {
+        $currentProfileId = $this->getCurrentUser();
+        if ($newsletter->author_id !== $currentProfileId) {
+            Log::warning('Unauthorized access attempt to send newsletter now.', [
+                'newsletter_id' => $newsletter->id,
+                'newsletter_author_id' => $newsletter->author_id,
+                'current_user_profile_id' => $currentProfileId,
+                'auth_user_id' => Auth::id()
+            ]);
+            abort(403, 'Unauthorized access to newsletter');
+        }
+
+        // Only allow sending scheduled newsletters
+        if ($newsletter->status !== 'scheduled') {
+            return redirect()->route('dashboard.newsletter')
+                ->with('error', 'Only scheduled newsletters can be sent immediately.');
+        }
+
+        // Update status and send
+        $newsletter->update([
+            'status' => 'sent',
+            'sent_at' => now(),
+            'scheduled_at' => null // Clear the scheduled time
+        ]);
+
+        $success = $this->sendNewsletterSync($newsletter);
+        
+        if ($success) {
+            return redirect()->route('dashboard.newsletter')
+                ->with('success', 'Newsletter has been sent successfully!');
+        } else {
+            return redirect()->route('dashboard.newsletter')
+                ->with('error', 'Failed to send newsletter. Please check logs.');
         }
     }
 
@@ -348,7 +371,7 @@ class NewsLetterController extends Controller
         }
 
         // Send the newsletter synchronously
-        $success = $this->sendNewsletterSync($newsletter); // Ensure this method exists
+        $success = $this->sendNewsletterSync($newsletter);
         
         if ($success) {
             return redirect()->route('dashboard.newsletter')
@@ -404,22 +427,50 @@ class NewsLetterController extends Controller
     public function newsletter(Request $request){
         $profile_id = $this->getCurrentUser();
         
-        $newsletters = Newsletter::with('author')
+        // Get all newsletters for this author
+        $allNewsletters = Newsletter::with('author', 'category')
             ->where('author_id', $profile_id)
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(10, ['*'], 'all_page');
+
+        // Get draft newsletters
+        $draftNewsletters = Newsletter::with('author', 'category')
+            ->where('author_id', $profile_id)
+            ->where('status', 'draft')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'draft_page');
+
+        // Get scheduled newsletters
+        $scheduledNewsletters = Newsletter::with('author', 'category')
+            ->where('author_id', $profile_id)
+            ->where('status', 'scheduled')
+            ->orderBy('scheduled_at', 'asc')
+            ->paginate(10, ['*'], 'scheduled_page');
+
+        // Get sent newsletters
+        $sentNewsletters = Newsletter::with('author', 'category')
+            ->where('author_id', $profile_id)
+            ->where('status', 'sent')
+            ->orderBy('sent_at', 'desc')
+            ->paginate(10, ['*'], 'sent_page');
 
         if ($request) {
-            $newsletters->appends($request->query());
+            $allNewsletters->appends($request->query());
+            $draftNewsletters->appends($request->query());
+            $scheduledNewsletters->appends($request->query());
+            $sentNewsletters->appends($request->query());
         }
             
-        return view('dashboard.newsletter.newsletter', compact('newsletters'));
+        return view('dashboard.newsletter.newsletter', compact(
+            'allNewsletters',
+            'draftNewsletters', 
+            'scheduledNewsletters',
+            'sentNewsletters'
+        ));
     }
     
     public function show(Newsletter $newsletter)
     {
-        // dd($newsletter);
-
         $currentProfileId = $this->getCurrentUser();
         if ($newsletter->author_id !== $currentProfileId) {
 
@@ -503,9 +554,9 @@ class NewsLetterController extends Controller
             
             $image = $request->file('featured_image');
             $filename = time() . Auth::id() . '_' . $image->getClientOriginalName();
-            $imagePath = 'featured_images/' . $filename; // Relative path for storage
-            $image->storeAs('public/featured_images', $filename); // Store in storage/app/public/featured_images
-            $imagePath = 'featured_images/' . $filename; // Path to be stored in DB
+            $imagePath = 'featured_images/' . $filename;
+            $image->storeAs('public/featured_images', $filename);
+            $imagePath = 'featured_images/' . $filename;
 
         } elseif ($request->has('remove_featured_image') && $request->remove_featured_image) {
             // Remove featured image

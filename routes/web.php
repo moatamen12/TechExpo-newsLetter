@@ -165,15 +165,20 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     //for the newsletter management
     Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
     Route::get('/dashboard/newsletter/create', [NewsLetterController::class, 'create'])->name('newsletter.create'); //create a email newsletter
-    Route::get('/newsletters/{id}', [NewsLetterController::class, 'show'])->name('newsletters.show');//show a newsletter by id
+    Route::get('/newsletters/{newsletter_id}', [NewsLetterController::class, 'show'])->name('newsletter.show');//show a newsletter by id
 
     Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
-    // Route::get('/dashboard/newsletter/edit/{newsletter_id}', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
-    // Route::patch('/dashboard/newsletter/update/{newsletter_id}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
-    // Route::delete('/dashboard/newsletter/{newsletter_id}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
-    // Route::post('/dashboard/newsletter/{newsletter_id}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');// send newsletter
-    // Route::post('/dashboard/newsletter/{newsletter_id}/schedule', [NewsLetterController::class, 'schedule'])->name('newsletter.schedule');// schedule newsletter
-    
+    Route::get('/newsletter/{newsletter}/edit', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
+    Route::put('/newsletter/{newsletter}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
+    Route::delete('/newsletter/{newsletter}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
+
+    // Newsletter send options and confirmation
+    Route::get('/newsletter/{newsletter}/send-options', [NewsLetterController::class, 'sendOptions'])->name('newsletter.send-options');
+    Route::post('/newsletter/{newsletter}/send-confirm', [NewsLetterController::class, 'sendConfirm'])->name('newsletter.send.confirm');
+    Route::post('/newsletter/{newsletter}/send-now', [NewsLetterController::class, 'sendNow'])->name('newsletter.send-now'); // New route for sending scheduled newsletters immediately
+    Route::get('/newsletter/{newsletter}/test-send', [NewsLetterController::class, 'testSend'])->name('newsletter.test-send');
+    Route::post('/newsletter/{newsletter}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');
+
     //subscribers management
     Route::get('/dashboard/subscribers', [NewsLetterController::class, 'subscribers'])->name('dashboard.subscribers');
     Route::delete('/dashboard/subscribers/{id}', [NewsLetterController::class, 'removeSubscriber'])->name('subscriber.remove');
@@ -190,28 +195,10 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     //deleting author profile
     Route::delete('/profile/author/delete', [ProfilesController::class, 'deleteAuthorProfile'])->name('author.profile.delete');
 
-
     // Newsletter preview route
     Route::get('/newsletter/{id}/preview', [NewsLetterController::class, 'preview'])->name('newsletter.preview');   
     // Newsletter send route
     Route::post('/newsletter/{id}/send', [NewsLetterController::class, 'sendNewsletter'])->name('newsletter.send');
-    //for the newsletter management
-    Route::get('/dashboard/newsletter/newsletter',[NewsLetterController::class, 'newsletter'])->name('dashboard.newsletter');
-    Route::get('/dashboard/newsletter/create', [NewsLetterController::class, 'create'])->name('newsletter.create'); //create a email newsletter
-    Route::get('/newsletters/{newsletter_id}', [NewsLetterController::class, 'show'])->name('newsletter.show');//show a newsletter by id
-
-    Route::post('/dashboard/newsletter', [NewsLetterController::class, 'store'])->name('newsletter.store');// storing the newsletter
-    Route::get('/newsletter/{newsletter}/edit', [NewsLetterController::class, 'edit'])->name('newsletter.edit');// editing a newsletter
-    Route::put('/newsletter/{newsletter}', [NewsLetterController::class, 'update'])->name('newsletter.update');// update newsletter
-    Route::delete('/newsletter/{newsletter}', [NewsLetterController::class, 'destroy'])->name('newsletter.destroy');// delete newsletter
-
-    // Newsletter send options and confirmation
-    Route::get('/newsletter/{newsletter}/send-options', [NewsLetterController::class, 'sendOptions'])->name('newsletter.send-options');
-    Route::post('/newsletter/{newsletter}/send-confirm', [NewsLetterController::class, 'sendConfirm'])->name('newsletter.send.confirm');
-    Route::get('/newsletter/{newsletter}/test-send', [NewsLetterController::class, 'testSend'])->name('newsletter.test-send');
-    Route::post('/newsletter/{newsletter}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');
-
-
 });
 
 //route for the profile.show for author

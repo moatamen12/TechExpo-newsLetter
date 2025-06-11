@@ -2,8 +2,8 @@
     'title',
     'icon',
     'count',
-    'percentageChange' => 0.0, // Default to 0.0
-    'changeDirection' => 'neutral' // Default to 'neutral'
+    'percentageChange' => null, // Changed to null to detect when no data
+    'changeDirection' => null  // Changed to null to detect when no data
 ])
 
 <div {{ $attributes->merge(['class' => 'card border-light p-1 mt-3 flex-fill border-1 border-light-subtle', 'style' => 'min-width: 200px; max-width: 300px;']) }}>
@@ -19,24 +19,31 @@
                 </div>
             </div>
         </div>
-        {{-- Check if percentageChange is not null and numeric, and changeDirection is not null --}}
-        {{-- The defaults in props make this check less critical, but it's good for robustness --}}
-        @if (is_numeric($percentageChange) && isset($changeDirection))
+        {{-- Only show percentage change if we have real data --}}
+        @if (is_numeric($percentageChange) && $changeDirection !== null && ($percentageChange > 0 || $changeDirection !== 'neutral'))
             <div class="mt-1">
-                <small class="metric-change  {{ $changeDirection === 'up' ? 'text-success' : ($changeDirection === 'down' ? 'text-danger' : 'text-muted') }}" style="font-size: 0.875rem; opacity: 0.9;">
+                <small class="metric-change {{ $changeDirection === 'up' ? 'text-success' : ($changeDirection === 'down' ? 'text-danger' : 'text-muted') }}" style="font-size: 0.875rem; opacity: 0.9;">
                     @if ($changeDirection === 'up')
                         <i class="fas fa-arrow-up me-1"></i>
                     @elseif ($changeDirection === 'down')
                         <i class="fas fa-arrow-down me-1"></i>
-                    @else
-                        {{-- Optionally, show a neutral icon or no icon --}}
-                        {{-- <i class="fas fa-minus me-1"></i> --}}
                     @endif
-                    {{-- Format to one decimal place --}}
                     {{ number_format($percentageChange, 1) }}%
                     @if ($changeDirection !== 'neutral')
-                        {{-- from last month --}} {{-- You can add this text back if desired --}}
+                        from last month
                     @endif
+                </small>
+            </div>
+        @elseif($percentageChange === 0 && $changeDirection === 'neutral')
+            <div class="mt-1">
+                <small class="text-muted" style="font-size: 0.875rem; opacity: 0.7;">
+                    No change from last month
+                </small>
+            </div>
+        @else
+            <div class="mt-1">
+                <small class="text-muted" style="font-size: 0.875rem; opacity: 0.7;">
+                    Start creating content to see trends
                 </small>
             </div>
         @endif

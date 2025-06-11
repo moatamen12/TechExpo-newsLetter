@@ -14,27 +14,50 @@ class DashboardCharts {
         this.chartColors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1'];
     }
 
-    // Monthly Performance Chart
+    // Check if data has meaningful values (not just zeros)
+    hasRealData(data) {
+        if (!data || !Array.isArray(data)) return false;
+        return data.some(val => val > 0);
+    }
+
+    // Monthly Performance Chart - only show with real data
     createPerformanceChart(canvasId, data) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
+        // Check for real data - articles published or views > 0
+        const hasArticleData = this.hasRealData(data.articles);
+        const hasViewData = this.hasRealData(data.views);
+
+        if (!hasArticleData && !hasViewData) {
+            this.showEmptyState(ctx, 'Start publishing articles to see performance data');
+            return;
+        }
+
         return new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: data.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: data.months || [],
                 datasets: [{
                     label: 'Articles Published',
-                    data: data.articles || [12, 19, 15, 25, 22, 30],
+                    data: data.articles || [],
                     borderColor: this.colors.primary,
                     backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: this.colors.primary,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }, {
                     label: 'Total Views',
-                    data: data.views || [150, 230, 180, 320, 280, 380],
+                    data: data.views || [],
                     borderColor: this.colors.success,
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: this.colors.success,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -51,6 +74,12 @@ class DashboardCharts {
                         beginAtZero: true,
                         grid: {
                             color: this.colors.light
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return Math.floor(value) === value ? value : '';
+                            }
                         }
                     },
                     x: {
@@ -58,33 +87,34 @@ class DashboardCharts {
                             display: false
                         }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
     }
 
-    // Audience Growth Chart
+    // Audience Growth Chart - only show with real followers
     createAudienceChart(canvasId, data) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
-        // Use real data or fallback to empty arrays
-        const labels = data.months || [];
-        const followers = data.followers || [];
+        const hasFollowerData = this.hasRealData(data.followers);
         
-        // If no data, show a message instead of fake data
-        if (labels.length === 0 || followers.length === 0) {
-            ctx.getContext('2d').fillText('No audience data available', 10, 50);
+        if (!hasFollowerData) {
+            this.showEmptyState(ctx, 'Start building your audience to see growth data');
             return;
         }
 
         return new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: labels,
+                labels: data.months || [],
                 datasets: [{
                     label: 'Followers',
-                    data: followers,
+                    data: data.followers || [],
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     borderColor: this.colors.info,
                     borderWidth: 2,
@@ -129,32 +159,39 @@ class DashboardCharts {
                             display: false
                         }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
     }
 
-    // Monthly Performance Chart (Stats Page Version)
+    // Monthly Chart for stats page
     createMonthlyChart(canvasId, data) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
+        const hasViewData = this.hasRealData(data.views);
+
+        if (!hasViewData) {
+            this.showEmptyState(ctx, 'Publish articles to see monthly performance');
+            return;
+        }
+
         return new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: data.months || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: data.months || [],
                 datasets: [{
                     label: 'Views',
-                    data: data.views || [150, 230, 180, 320, 280, 380],
+                    data: data.views || [],
                     borderColor: '#20c997',
                     backgroundColor: 'rgba(32, 201, 151, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: '#20c997',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -170,74 +207,6 @@ class DashboardCharts {
                         beginAtZero: true,
                         grid: {
                             color: this.colors.light
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Audience Growth Chart (Stats Page Version)
-    createAudienceGrowthChart(canvasId, data) {
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) return;
-
-        // Use real data or show empty state
-        const labels = data.months || [];
-        const users = data.followers || data.users || [];
-        
-        if (labels.length === 0 || users.length === 0) {
-            const context = ctx.getContext('2d');
-            context.fillStyle = '#6c757d';
-            context.font = '14px Arial';
-            context.textAlign = 'center';
-            context.fillText('No audience data available', ctx.width / 2, ctx.height / 2);
-            return;
-        }
-
-        return new Chart(ctx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Followers',
-                    data: users,
-                    borderColor: this.colors.info,
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: this.colors.info,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Followers: ${context.parsed.y}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
                         },
                         ticks: {
                             stepSize: 1,
@@ -251,29 +220,31 @@ class DashboardCharts {
                             display: false
                         }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
     }
 
-    // Category Doughnut Chart
+    // Category Chart - only show with real categories
     createCategoryChart(canvasId, data) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
-        const categoryData = data || [];
+        const hasRealCategories = data && data.length > 0 && 
+                                 data.some(cat => cat.count > 0);
+        
+        if (!hasRealCategories) {
+            this.showEmptyState(ctx, 'Publish articles in different categories to see distribution');
+            return;
+        }
         
         return new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: categoryData.map(cat => cat.name),
+                labels: data.map(cat => cat.name),
                 datasets: [{
-                    data: categoryData.map(cat => cat.count || cat.percentage),
-                    backgroundColor: this.chartColors.slice(0, categoryData.length),
+                    data: data.map(cat => cat.count),
+                    backgroundColor: this.chartColors.slice(0, data.length),
                     borderWidth: 0
                 }]
             },
@@ -283,6 +254,16 @@ class DashboardCharts {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((dataset.data[context.dataIndex] / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} articles (${percentage}%)`;
+                            }
+                        }
                     }
                 },
                 cutout: '60%',
@@ -295,17 +276,56 @@ class DashboardCharts {
         });
     }
 
-    // Initialize all charts for dashboard home page
+    // Enhanced empty state
+    showEmptyState(canvas, message) {
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set styles
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw chart icon
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 30, centerY - 10);
+        ctx.lineTo(centerX - 10, centerY - 25);
+        ctx.lineTo(centerX + 10, centerY - 5);
+        ctx.lineTo(centerX + 30, centerY - 20);
+        ctx.stroke();
+        
+        // Draw axes
+        ctx.beginPath();
+        ctx.moveTo(centerX - 40, centerY + 20);
+        ctx.lineTo(centerX + 40, centerY + 20);
+        ctx.moveTo(centerX - 40, centerY + 20);
+        ctx.lineTo(centerX - 40, centerY - 40);
+        ctx.stroke();
+        
+        // Draw message
+        ctx.fillText(message, centerX, centerY + 40);
+    }
+
+    // Initialize dashboard charts with data validation
     initDashboardCharts(data) {
+        console.log('Dashboard charts data:', data); // Debug log
         this.createPerformanceChart('performanceChart', data.monthlyData || {});
-        this.createAudienceChart('audienceChart', data.audienceData || {});
+        this.createAudienceChart('audienceChart', data.audienceGrowth || {});
         this.createCategoryChart('categoryChart', data.categoryStats || []);
     }
 
-    // Initialize all charts for stats page
+    // Initialize stats charts with data validation  
     initStatsCharts(data) {
+        console.log('Stats charts data:', data); // Debug log
         this.createMonthlyChart('monthlyChart', data.monthlyData || {});
-        this.createAudienceGrowthChart('audienceChart', data.audienceGrowth || {});
+        this.createAudienceChart('audienceChart', data.audienceGrowth || {});
         this.createCategoryChart('categoryChart', data.categoryStats || []);
     }
 }

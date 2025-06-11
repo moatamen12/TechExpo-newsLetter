@@ -199,7 +199,7 @@
                             @forelse($recentActivity as $activity)
                             <div class="d-flex align-items-start mb-3">
                                 <div class="flex-shrink-0 me-3">
-                                    <div class="bg-{{ $activity['type'] == 'article' ? 'primary' : ($activity['type'] == 'comment' ? 'success' : ($activity['type'] == 'like' ? 'danger' : ($activity['type'] == 'save' ? 'warning' : ($activity['type'] == 'follower' ? 'info' : 'secondary')))) }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <div class="bg-{{ $activity['type'] == 'article' ? 'primary' : ($activity['type'] == 'comment' ? 'success' : ($activity['type'] == 'like' ? 'danger' : ($activity['type'] == 'save' ? 'warning' : ($activity['type'] == 'follower' ? 'info' : ($activity['type'] == 'newsletter' ? 'dark' : 'secondary'))))) }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                         @if($activity['type'] == 'article')
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -207,6 +207,11 @@
                                                 <line x1="16" y1="13" x2="8" y2="13"></line>
                                                 <line x1="16" y1="17" x2="8" y2="17"></line>
                                                 <polyline points="10,9 9,9 8,9"></polyline>
+                                            </svg>
+                                        @elseif($activity['type'] == 'newsletter')
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                <polyline points="22,6 12,13 2,6"></polyline>
                                             </svg>
                                         @elseif($activity['type'] == 'comment')
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -237,6 +242,15 @@
                                 <div class="flex-grow-1">
                                     <div class="small">
                                         <strong>{{ $activity['title'] }}</strong>
+                                        @if($activity['type'] == 'newsletter' && isset($activity['status']))
+                                            <span class="badge badge-sm ms-1 
+                                                @if($activity['status'] == 'sent') bg-success 
+                                                @elseif($activity['status'] == 'scheduled') bg-warning text-dark
+                                                @else bg-secondary 
+                                                @endif">
+                                                {{ ucfirst($activity['status']) }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="small text-muted">{{ $activity['description'] }}</div>
                                     <div class="small text-muted">{{ $activity['time'] }}</div>
@@ -248,27 +262,27 @@
                             </div>
                             @endforelse
                         </div>
-                    </div>
 
-                    <!-- Content Categories Pie Chart (Smaller) -->
-                    <div class="card border-light shadow-sm">
-                        <div class="card-header bg-white border-0 pb-2">
-                            <h6 class="card-title fw-bold mb-3">Content Categories</h6>
-                        </div>
-                        <div class="card-body py-3">
-                            <div class="d-flex align-items-center justify-content-center mb-3">
-                                <canvas id="categoryChart" width="150" height="150" style="max-height: 150px;"></canvas>
+                        <!-- Content Categories Pie Chart (Smaller) -->
+                        <div class="card border-light shadow-sm">
+                            <div class="card-header bg-white border-0 pb-2">
+                                <h6 class="card-title fw-bold mb-3">Content Categories</h6>
                             </div>
-                            <div>
-                                @foreach($categoryStats as $category)
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2" style="width: 8px; height: 8px; background-color: {{ $loop->index == 0 ? '#20c997' : ($loop->index == 1 ? '#17a2b8' : ($loop->index == 2 ? '#6f42c1' : '#fd7e14')) }};"></div>
-                                        <span class="small text-muted">{{ $category['name'] }}</span>
-                                    </div>
-                                    <span class="small fw-bold">{{ $category['percentage'] }}%</span>
+                            <div class="card-body py-3">
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <canvas id="categoryChart" width="150" height="150" style="max-height: 150px;"></canvas>
                                 </div>
-                                @endforeach
+                                <div>
+                                    @foreach($categoryStats as $category)
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle me-2" style="width: 8px; height: 8px; background-color: {{ $loop->index == 0 ? '#20c997' : ($loop->index == 1 ? '#17a2b8' : ($loop->index == 2 ? '#6f42c1' : '#fd7e14')) }};"></div>
+                                            <span class="small text-muted">{{ $category['name'] }}</span>
+                                        </div>
+                                        <span class="small fw-bold">{{ $category['percentage'] }}%</span>
+                                    </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
