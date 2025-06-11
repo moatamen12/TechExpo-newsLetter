@@ -8,6 +8,7 @@ use App\Models\UserProfiles;
 use App\Models\Categorie;
 use App\Models\Subscriber;
 use App\Models\UserFollower;
+use App\Models\Article; // Add Article model
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\NewsletterEmail;
@@ -787,5 +788,106 @@ class NewsLetterController extends Controller
     {
         // For now, return CSV format
         return $this->exportToCSV($subscribers);
+    }
+
+    /**
+     * Create newsletter from existing article
+     */
+    public function createFromArticle($article_id)
+    {
+        try {
+            // Get the article
+            $article = Article::with(['author.user', 'categorie'])->findOrFail($article_id);
+            
+            // Get current user profile
+            $currentProfileId = $this->getCurrentUser();
+            
+            // Check if user is the author of the article
+            if ($article->author_id !== $currentProfileId) {
+                return redirect()->back()->with('error', 'You can only convert your own articles to newsletters.');
+            }
+            
+            // Check if article is published
+            if ($article->status !== 'published') {
+                return redirect()->back()->with('error', 'Only published articles can be converted to newsletters.');
+            }
+            
+            // Create newsletter from article
+            $newsletter = Newsletter::create([
+                'author_id' => $currentProfileId,
+                'title' => $article->title,
+                'content' => $this->formatArticleForNewsletter($article),
+                'summary' => $this->createSummary($article),
+                'category_id' => $article->category_id,
+                'featured_image' => $article->featured_image_url,
+                'status' => 'draft',
+                'recipient_type' => null,
+                'selected_subscribers' => null,
+                'scheduled_at' => null,
+                'sent_at' => null,
+                'total_sent' => 0,
+                'total_failed' => 0,
+            ]);
+            
+            return redirect()->route('newsletter.send-options', $newsletter->id)
+                            ->with('success', 'Article converted to newsletter! Configure your send options.');
+                            
+        } catch (\Exception $e) {
+            Log::error('Failed to convert article to newsletter', [
+                'article_id' => $article_id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to convert article. Please try again.');
+        }
+    }
+
+    private function formatArticleForNewsletter($article)
+    {
+        $content = '<div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">';
+        
+        // Add title
+        $content .= '<h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">' . $article->title . '</h1>';
+        
+        // Add meta info
+        $content .= '<p style="color: #666; font-size: 14px; margin-bottom: 20px;">';
+        $content .= 'Published on ' . $article->created_at->format('F j, Y');
+        if ($article->categorie) {
+            $content .= ' • ' . $article->categorie->name;
+        }
+        $content .= '</p>';
+        
+        // Add featured image if exists
+        if ($article->featured_image_url) {
+            $content .= '<img src="' . asset('storage/' . $article->featured_image_url) . '" ';
+            $content .= 'alt="' . $article->title . '" ';
+            $content .= 'style="width: 100%; height: auto; margin: 20px 0; border-radius: 8px;">';
+        }
+        
+        // Add main content
+        $content .= '<div style="line-height: 1.6; color: #444;">' . $article->content . '</div>';
+        
+        // Add footer
+        $content .= '<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">';
+        $content .= '<p style="color: #666; font-size: 14px;">Read online: ';
+        $content .= '<a href="' . route('articles.show', $article->article_id) . '">View Article</a></p>';
+        $content .= '</div>';
+        
+        $content .= '</div>';
+        
+        return $content;
+    }
+
+    private function createSummary($article)
+    {
+        $plainText = strip_tags($article->content);
+        $plainText = preg_replace('/\s+/', ' ', trim($plainText));
+        
+        if (strlen($plainText) > 200) {
+            return substr($plainText, 0, 197) . '...';
+        }
+        
+        return $plainText ?: 'Newsletter from article: ' . $article->title;
     }
 }

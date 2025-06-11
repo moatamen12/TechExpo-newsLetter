@@ -178,7 +178,7 @@ Route::middleware(['auth', 'checkUserProfile.dashboard'])->group(function () {
     Route::post('/newsletter/{newsletter}/send-now', [NewsLetterController::class, 'sendNow'])->name('newsletter.send-now'); // New route for sending scheduled newsletters immediately
     Route::get('/newsletter/{newsletter}/test-send', [NewsLetterController::class, 'testSend'])->name('newsletter.test-send');
     Route::post('/newsletter/{newsletter}/send', [NewsLetterController::class, 'send'])->name('newsletter.send');
-
+    Route::post('/articles/{article}/send-as-newsletter', [NewsLetterController::class, 'createFromArticle'])->name('articles.send-as-newsletter'); //send a artilcle to newsletter
     //subscribers management
     Route::get('/dashboard/subscribers', [NewsLetterController::class, 'subscribers'])->name('dashboard.subscribers');
     Route::delete('/dashboard/subscribers/{id}', [NewsLetterController::class, 'removeSubscriber'])->name('subscriber.remove');

@@ -2,6 +2,20 @@
 @section('title', $article->title)
 @section('content')
 <section class="container-flued p-lg-5 mx-lg-5 d-flex flex-column justify-content-center align-items-center">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show mx-5" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show mx-5" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    
     <div class="px-lg-5 mx-5">
         {{-- the article title --}}
         <div class="pb-2" id="title">
@@ -62,9 +76,9 @@
                             </form>
                             {{-- Add your "Send as Newsletter" button/form here --}}
                             {{-- Example:{{ route('articles.sendNewsletter', $article->article_id) }} --}}
-                            <form action="#" method="POST" onsubmit="return confirm('Are you sure you want to send this article as a newsletter?');">
+                            <form action="{{ route('articles.send-as-newsletter', $article->article_id) }}" method="POST" onsubmit="return confirm('This will convert your article into a newsletter draft. Continue?');">
                                 @csrf
-                                <button type="submit" class="btn btn-subscribe-outline   btn-sm rounded-pill">
+                                <button type="submit" class="btn btn-subscribe-outline btn-sm rounded-pill">
                                     <i class="fas fa-paper-plane me-1"></i> Send as Newsletter
                                 </button>
                             </form>
