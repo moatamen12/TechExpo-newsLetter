@@ -12,7 +12,7 @@
 <div class="container px-5 ">
     <x-dashboard-header 
         title="Create New Newsletter" 
-        description="Create and send a new newsletter to subscribers"
+        description="Create a new newsletter"
         :btn="$btn"
         class="mb-2 ">
     </x-dashboard-header>
@@ -48,51 +48,6 @@
                             placeholder="This text appears in email previews and helps subscribers decide to open your newsletter" 
                             minlength="30" maxlength="300" value="{{ old('summary') }}" required>
                         <small class="text-muted">Preview text should be 30-300 characters</small>
-                    </div>
-
-                    <!-- Send Options -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Send Options</label>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="send_option" id="send-now" 
-                                        value="now" {{ old('send_option') == 'now' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="send-now">
-                                        <strong>Send Now</strong><br>
-                                        <small class="text-muted">Send immediately after creation</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="send_option" id="send-scheduled" 
-                                        value="scheduled" {{ old('send_option') == 'scheduled' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="send-scheduled">
-                                        <strong>Schedule Send</strong><br>
-                                        <small class="text-muted">Schedule for later delivery</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="send_option" id="save-draft" 
-                                        value="draft" {{ old('send_option', 'draft') == 'draft' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="save-draft">
-                                        <strong>Save as Draft</strong><br>
-                                        <small class="text-muted">Save without sending</small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Schedule Date Time (Hidden by default) -->
-                    <div class="mb-4" id="schedule-datetime" style="display: none;">
-                        <label for="scheduled_at" class="form-label fw-bold">Schedule Date & Time</label>
-                        <input type="datetime-local" class="form-control" id="scheduled_at" name="scheduled_at" 
-                            value="{{ old('scheduled_at') }}" min="{{ now()->format('Y-m-d\TH:i') }}">
-                        <small class="text-muted">Select when you want to send this newsletter</small>
                     </div>
                 </div>
             </div>
@@ -196,8 +151,8 @@
                         <a href="{{route('dashboard')}}" class="btn text-danger">Cancel</a>
                     </div>
                     <div>
-                        <button type="submit" class="btn btn-subscribe" id="submit-btn">
-                            <span id="submit-btn-text">Save as Draft</span>
+                        <button type="submit" class="btn btn-subscribe">
+                            <i class="fas fa-save me-2"></i>Create Newsletter
                         </button>
                     </div>
                 </div>
@@ -225,12 +180,6 @@
     {{-- Newsletter-specific JavaScript --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const sendNowRadio = document.getElementById('send-now');
-            const sendScheduledRadio = document.getElementById('send-scheduled');
-            const saveDraftRadio = document.getElementById('save-draft');
-            const scheduleDatetime = document.getElementById('schedule-datetime');
-            const submitBtnText = document.getElementById('submit-btn-text');
-            
             // Content method elements
             const methodEditor = document.getElementById('method-editor');
             const methodTemplate = document.getElementById('method-template');
@@ -241,19 +190,6 @@
             const templatePreviewContent = document.getElementById('template-preview-content');
             const templateEditOption = document.getElementById('template-edit-option');
             const removeTemplateBtn = document.getElementById('remove-template');
-            
-            function toggleSendOptions() {
-                if (sendScheduledRadio.checked) {
-                    scheduleDatetime.style.display = 'block';
-                    submitBtnText.textContent = 'Schedule Newsletter';
-                } else if (sendNowRadio.checked) {
-                    scheduleDatetime.style.display = 'none';
-                    submitBtnText.textContent = 'Continue to Send Options';
-                } else {
-                    scheduleDatetime.style.display = 'none';
-                    submitBtnText.textContent = 'Save as Draft';
-                }
-            }
             
             function toggleContentMethod() {
                 if (methodTemplate.checked) {
@@ -297,17 +233,37 @@
             }
             
             // Event listeners
-            sendNowRadio.addEventListener('change', toggleSendOptions);
-            sendScheduledRadio.addEventListener('change', toggleSendOptions);
-            saveDraftRadio.addEventListener('change', toggleSendOptions);
             methodEditor.addEventListener('change', toggleContentMethod);
             methodTemplate.addEventListener('change', toggleContentMethod);
             htmlTemplateInput.addEventListener('change', handleTemplateUpload);
             removeTemplateBtn.addEventListener('click', removeTemplate);
             
             // Initialize on page load
-            toggleSendOptions();
             toggleContentMethod();
+
+            // Image preview functionality
+            const featuredImageInput = document.getElementById('featured_image');
+            const imagePreview = document.getElementById('image-preview');
+            const previewContainer = document.querySelector('.preview-container');
+            const removeImageBtn = document.getElementById('remove-image');
+
+            featuredImageInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        previewContainer.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            removeImageBtn.addEventListener('click', function() {
+                featuredImageInput.value = '';
+                imagePreview.src = '#';
+                previewContainer.classList.add('d-none');
+            });
         });
     </script>
 @endpush

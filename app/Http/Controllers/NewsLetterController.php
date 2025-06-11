@@ -9,12 +9,14 @@ use App\Models\Categorie;
 use App\Models\Subscriber;
 use App\Models\UserFollower;
 use App\Models\Article; // Add Article model
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\NewsletterEmail;
 use App\Mail\NewsletterSentSuccessfully;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class NewsLetterController extends Controller
 {
@@ -53,7 +55,6 @@ class NewsLetterController extends Controller
             'summary' => 'required|string|min:30|max:300',
             'content' => 'required|string',
             'category_id' => 'required|exists:categories,category_id',
-            'send_option' => 'required|in:now,scheduled,draft',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
@@ -69,7 +70,7 @@ class NewsLetterController extends Controller
             $imagePath = 'featured_images/' . $filename;
         }
 
-        // Always create as draft first
+        // Always create as draft and redirect to send-options
         $newsletter = Newsletter::create([
             'title' => $request->title,
             'content' => $request->content,
@@ -77,22 +78,14 @@ class NewsLetterController extends Controller
             'author_id' => $profile_id,
             'category_id' => $request->category_id,
             'featured_image' => $imagePath,
-            'status' => 'draft', // Always start as draft
+            'status' => 'draft',
             'scheduled_at' => null,
             'sent_at' => null,
         ]);
 
-        // Handle different send options - all go through send-options page
-        if ($request->send_option === 'now') {
-            return redirect()->route('newsletter.send-options', $newsletter->id)
-                             ->with('success', 'Newsletter created. Please configure send options.');
-        } elseif ($request->send_option === 'scheduled') {
-            return redirect()->route('newsletter.send-options', $newsletter->id)
-                             ->with('success', 'Newsletter created. Please configure schedule options.');
-        } else { // draft
-            return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been saved as a draft.');
-        }
+        // Always redirect to send-options page
+        return redirect()->route('newsletter.send-options', $newsletter->id)
+                         ->with('success', 'Newsletter created successfully! Choose what to do next.');
     }
 
     /**
@@ -129,52 +122,90 @@ class NewsLetterController extends Controller
     {
         $currentProfileId = $this->getCurrentUser();
         if ($newsletter->author_id !== $currentProfileId) {
-            Log::warning('Unauthorized access attempt to confirm send newsletter.', [
-                'newsletter_id' => $newsletter->id,
-                'newsletter_author_id' => $newsletter->author_id,
-                'current_user_profile_id' => $currentProfileId,
-                'auth_user_id' => Auth::id()
-            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
 
-        $request->validate([
-            'recipient_type' => 'required|in:all_followers,selected_followers,test',
-            'selected_followers' => 'required_if:recipient_type,selected_followers|array',
-            'selected_followers.*' => 'exists:user_followers,id',
-            'send_time' => 'required|in:immediate,scheduled',
-            'scheduled_at' => 'required_if:send_time,scheduled|nullable|date|after:now',
-        ]);
-
-        // Update newsletter with recipient type and timing
-        $updateData = [
-            'recipient_type' => $request->recipient_type,
+        // Validate based on action type
+        $rules = [
+            'action_type' => 'required|in:send,schedule,draft',
         ];
 
-        // Store selected followers if specified
-        if ($request->recipient_type === 'selected_followers' && $request->selected_followers) {
-            $updateData['selected_subscribers'] = json_encode($request->selected_followers);
-        }
-
-        if ($request->send_time === 'scheduled') {
-            $updateData['status'] = 'scheduled';
-            $updateData['scheduled_at'] = $request->scheduled_at;
+        // Add conditional validation based on action type
+        if ($request->action_type === 'draft') {
+            // No additional validation needed for draft
         } else {
-            $updateData['status'] = 'sent';
-            $updateData['sent_at'] = now();
+            // For send and schedule, we need recipient info
+            $rules['recipient_type'] = 'required|in:all_followers,selected_followers,test';
+            $rules['selected_followers'] = 'required_if:recipient_type,selected_followers|array';
+            
+            if ($request->action_type === 'schedule') {
+                $rules['scheduled_at'] = 'required|date|after:now';
+            }
         }
 
-        $newsletter->update($updateData);
+        $request->validate($rules);
 
-        if ($request->send_time === 'immediate') {
+        // Handle different action types
+        if ($request->action_type === 'draft') {
+            // Just save as draft
+            $newsletter->update(['status' => 'draft']);
+            
+            return redirect()->route('dashboard.newsletter')
+                ->with('success', 'Newsletter has been saved as a draft.');
+                
+        } elseif ($request->action_type === 'schedule') {
+            // Schedule the newsletter
+            $updateData = [
+                'status' => 'scheduled',
+                'scheduled_at' => $request->scheduled_at,
+                'recipient_type' => $request->recipient_type,
+            ];
+
+            if ($request->recipient_type === 'selected_followers' && $request->selected_followers) {
+                $updateData['selected_subscribers'] = json_encode($request->selected_followers);
+            }
+
+            $newsletter->update($updateData);
+            
+            return redirect()->route('dashboard.newsletter')
+                ->with('success', 'Newsletter has been scheduled for ' . 
+                   \Carbon\Carbon::parse($request->scheduled_at)->format('M j, Y \a\t g:i A'));
+                   
+        } else {
             // Send immediately
-            $this->sendNewsletterSync($newsletter);
-            return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been sent successfully!');
-        } else {
-            // Schedule for later
-            return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been scheduled successfully!');
+            $updateData = [
+                'recipient_type' => $request->recipient_type,
+            ];
+
+            if ($request->recipient_type === 'selected_followers' && $request->selected_followers) {
+                $updateData['selected_subscribers'] = json_encode($request->selected_followers);
+            }
+
+            $newsletter->update($updateData);
+            
+            try {
+                $newsletter->update(['status' => 'sending']);
+                $result = $this->sendNewsletterSync($newsletter);
+                
+                if ($result) {
+                    return redirect()->route('dashboard.newsletter')
+                        ->with('success', 'Newsletter has been sent successfully!');
+                } else {
+                    return redirect()->route('dashboard.newsletter')
+                        ->with('error', 'Failed to send newsletter. Please check the logs for details.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Error in sendConfirm immediate send', [
+                    'newsletter_id' => $newsletter->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                $newsletter->update(['status' => 'failed']);
+                
+                return redirect()->route('dashboard.newsletter')
+                    ->with('error', 'An error occurred while sending the newsletter: ' . $e->getMessage());
+            }
         }
     }
 
@@ -185,36 +216,37 @@ class NewsLetterController extends Controller
     {
         $currentProfileId = $this->getCurrentUser();
         if ($newsletter->author_id !== $currentProfileId) {
-            Log::warning('Unauthorized access attempt to send newsletter now.', [
-                'newsletter_id' => $newsletter->id,
-                'newsletter_author_id' => $newsletter->author_id,
-                'current_user_profile_id' => $currentProfileId,
-                'auth_user_id' => Auth::id()
-            ]);
             abort(403, 'Unauthorized access to newsletter');
         }
 
-        // Only allow sending scheduled newsletters
         if ($newsletter->status !== 'scheduled') {
-            return redirect()->route('dashboard.newsletter')
-                ->with('error', 'Only scheduled newsletters can be sent immediately.');
+            return redirect()->back()->with('error', 'This newsletter is not scheduled.');
         }
 
-        // Update status and send
-        $newsletter->update([
-            'status' => 'sent',
-            'sent_at' => now(),
-            'scheduled_at' => null // Clear the scheduled time
-        ]);
+        try {
+            $newsletter->update([
+                'status' => 'sending',
+                'sent_at' => now(),
+                'scheduled_at' => null
+            ]);
 
-        $success = $this->sendNewsletterSync($newsletter);
-        
-        if ($success) {
-            return redirect()->route('dashboard.newsletter')
-                ->with('success', 'Newsletter has been sent successfully!');
-        } else {
-            return redirect()->route('dashboard.newsletter')
-                ->with('error', 'Failed to send newsletter. Please check logs.');
+            $result = $this->sendNewsletterSync($newsletter);
+            
+            if ($result) {
+                $newsletter->update(['status' => 'sent']);
+                return redirect()->back()->with('success', 'Newsletter sent successfully!');
+            } else {
+                $newsletter->update(['status' => 'failed']);
+                return redirect()->back()->with('error', 'Failed to send newsletter.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error sending newsletter immediately', [
+                'newsletter_id' => $newsletter->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            $newsletter->update(['status' => 'failed']);
+            return redirect()->back()->with('error', 'An error occurred while sending the newsletter.');
         }
     }
 
@@ -889,5 +921,218 @@ class NewsLetterController extends Controller
         }
         
         return $plainText ?: 'Newsletter from article: ' . $article->title;
+    }
+
+    /**
+     * Get recent activity for the author's profile - WITHOUT comments
+     */
+    public function getRecentActivity($profileId, $limit = 10)
+    {
+        $activities = collect();
+        
+        // Get recent newsletters
+        $newsletters = Newsletter::where('author_id', $profileId)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(function($newsletter) {
+                return [
+                    'type' => 'newsletter_created',
+                    'title' => 'Created newsletter: ' . $newsletter->title,
+                    'description' => 'Published a new newsletter',
+                    'date' => $newsletter->created_at,
+                    'icon' => 'fas fa-newspaper',
+                    'color' => 'primary',
+                    'link' => route('newsletter.show', $newsletter->id),
+                    'item' => $newsletter
+                ];
+            });
+        
+        // Get recent articles (if you have articles)
+        if (class_exists('App\Models\Article')) {
+            $articles = Article::where('author_id', $profileId)
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get()
+                ->map(function($article) {
+                    return [
+                        'type' => 'article_created',
+                        'title' => 'Published article: ' . $article->title,
+                        'description' => 'Published a new article',
+                        'date' => $article->created_at,
+                        'icon' => 'fas fa-file-alt',
+                        'color' => 'success',
+                        'link' => route('articles.show', $article->article_id),
+                        'item' => $article
+                    ];
+                });
+            $activities = $activities->merge($articles);
+        }
+        
+        // Get recent followers
+        $followers = UserFollower::where('following_id', $profileId)
+            ->with('follower')
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(function($follower) {
+                return [
+                    'type' => 'new_follower',
+                    'title' => $follower->follower->name . ' started following you',
+                    'description' => 'You have a new follower',
+                    'date' => $follower->created_at,
+                    'icon' => 'fas fa-user-plus',
+                    'color' => 'warning',
+                    'link' => '#',
+                    'item' => $follower,
+                    'user' => $follower->follower
+                ];
+            });
+        
+        // Merge activities (without comments)
+        $activities = $activities->merge($newsletters)
+                               ->merge($followers);
+        
+        // Sort by date and limit
+        return $activities->sortByDesc('date')->take($limit)->values();
+    }
+
+    /**
+     * Update your existing method that shows the dashboard or profile
+     */
+    public function dashboard()
+    {
+        $profileId = $this->getCurrentUser();
+        
+        // Get recent activity
+        $recentActivity = $this->getRecentActivity($profileId, 15);
+        
+        // Get other dashboard data
+        $totalNewsletters = Newsletter::where('author_id', $profileId)->count();
+        $totalFollowers = UserFollower::where('following_id', $profileId)->count();
+        $totalSent = Newsletter::where('author_id', $profileId)
+                              ->where('status', 'sent')
+                              ->sum('success_count');
+        
+        // Get recent newsletters
+        $recentNewsletters = Newsletter::where('author_id', $profileId)
+                                      ->orderBy('created_at', 'desc')
+                                      ->limit(5)
+                                      ->get();
+        
+        return view('dashboard.index', compact(
+            'totalNewsletters',
+            'totalFollowers', 
+            'totalSent',
+            'recentNewsletters',
+            'recentActivity'
+        ));
+    }
+
+    public function processNewsletter(Request $request, $newsletter)
+    {
+        try {
+            // Get the newsletter
+            $newsletter = Newsletter::findOrFail($newsletter);
+            
+            // Instead of setting status to 'sending', keep it as 'scheduled' during processing
+            // and only update to 'sent' after successful completion
+            
+            // Validate request
+            $request->validate([
+                'action_type' => 'required|in:send,schedule,draft',
+                'recipient_type' => 'required_if:action_type,send|in:all_followers,selected_followers,test',
+                'selected_followers' => 'required_if:recipient_type,selected_followers|array',
+                'scheduled_at' => 'required_if:action_type,schedule|date|after:now'
+            ]);
+
+            if ($request->action_type === 'draft') {
+                // Save as draft
+                $newsletter->update(['status' => 'draft']);
+                return redirect()->route('dashboard.newsletter')->with('success', 'Newsletter saved as draft.');
+            }
+
+            if ($request->action_type === 'schedule') {
+                // Schedule newsletter
+                $newsletter->update([
+                    'status' => 'scheduled',
+                    'scheduled_at' => $request->scheduled_at,
+                    'selected_subscribers' => $request->recipient_type === 'selected_followers' ? $request->selected_followers : null
+                ]);
+                return redirect()->route('dashboard.newsletter')->with('success', 'Newsletter scheduled successfully.');
+            }
+
+            // Send newsletter immediately
+            // Keep status as current until sending is complete
+            $currentStatus = $newsletter->status;
+            
+            // Get recipients
+            $recipients = $this->getRecipients($newsletter, $request->recipient_type, $request->selected_followers ?? []);
+            
+            if (empty($recipients)) {
+                return redirect()->back()->with('error', 'No recipients found to send the newsletter to.');
+            }
+
+            // Send emails
+            $sentCount = 0;
+            $failedCount = 0;
+            
+            foreach ($recipients as $recipient) {
+                try {
+                    Mail::to($recipient->email)->send(new NewsletterEmail($newsletter, $newsletter->author));
+                    $sentCount++;
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    Log::error('Failed to send newsletter to ' . $recipient->email . ': ' . $e->getMessage());
+                }
+            }
+            
+            // Only update status to 'sent' after all emails are processed
+            $newsletter->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'total_sent' => $sentCount,
+                'total_failed' => $failedCount
+            ]);
+            
+            $message = "Newsletter sent successfully! Sent to {$sentCount} recipients.";
+            if ($failedCount > 0) {
+                $message .= " {$failedCount} emails failed to send.";
+            }
+            
+            return redirect()->route('dashboard.newsletter')->with('success', $message);
+            
+        } catch (\Exception $e) {
+            // If there was an error, revert status if it was changed
+            if (isset($currentStatus) && $newsletter->status !== $currentStatus) {
+                $newsletter->update(['status' => $currentStatus]);
+            }
+            
+            Log::error('Newsletter sending error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'An error occurred while sending the newsletter: ' . $e->getMessage());
+        }
+    }
+
+    private function getRecipients($newsletter, $recipientType, $selectedFollowers = [])
+    {
+        $authorId = $newsletter->author_id;
+        
+        switch ($recipientType) {
+            case 'all_followers':
+                return User::whereHas('following', function($query) use ($authorId) {
+                    $query->where('followed_user_id', $authorId);
+                })->get();
+                
+            case 'selected_followers':
+                return User::whereHas('following', function($query) use ($authorId) {
+                    $query->where('followed_user_id', $authorId);
+                })->whereIn('id', $selectedFollowers)->get();
+                
+            case 'test':
+                return collect([Auth::user()]);
+                
+            default:
+                return collect([]);
+        }
     }
 }

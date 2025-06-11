@@ -33,9 +33,15 @@ class SendScheduledNewsletters implements ShouldQueue
             ->where('scheduled_at', '<=', Carbon::now())
             ->get();
 
+        $this->info("Found {$scheduledNewsletters->count()} scheduled newsletters to process");
+
         foreach ($scheduledNewsletters as $newsletter) {
             try {
-                Log::info('Processing scheduled newsletter', ['id' => $newsletter->id]);
+                Log::info('Processing scheduled newsletter', [
+                    'id' => $newsletter->id,
+                    'title' => $newsletter->title,
+                    'scheduled_at' => $newsletter->scheduled_at
+                ]);
                 
                 // Update status to sending
                 $newsletter->update(['status' => 'sending']);
@@ -58,10 +64,19 @@ class SendScheduledNewsletters implements ShouldQueue
             } catch (\Exception $e) {
                 Log::error('Error sending scheduled newsletter', [
                     'id' => $newsletter->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
                 $newsletter->update(['status' => 'failed']);
             }
+        }
+    }
+
+    private function info($message)
+    {
+        // For console output when run via command
+        if (app()->runningInConsole()) {
+            echo "[" . now()->toDateTimeString() . "] " . $message . "\n";
         }
     }
 }

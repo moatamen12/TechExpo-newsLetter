@@ -11,8 +11,8 @@
 @section('content')
 <div class="container px-5 ">
     <x-dashboard-header 
-        title="Create New Article/Newsletter" 
-        description="Write and publish a new article/newsletter"
+        title="Create New Article" 
+        description="Write and publish a new article"
         :btn="$btn"
         class="secondary-btn mb-2 ">
     </x-dashboard-header>
@@ -36,15 +36,15 @@
                     <div class="mb-4">
                         <label for="title" class="form-label fw-bold">newsletter.Article Title</label>
                         <input type="text" class=" form-control form-control-sm" id="title" name="title" 
-                            placeholder="Enter Your newsletter/Artilce Title " minlength="10" maxlength="100"
+                            placeholder="Enter Your Artilce Title " minlength="10" maxlength="100"
                             value="{{ old('title') }}" required>
                             <small class="text-muted">Title should be 10-100 characters</small>
                     </div>
                     <!-- Article Summary -->
                     <div class="mb-4">
-                        <label for="summary" class="form-label fw-bold">newsletter/Article Summary</label>
+                        <label for="summary" class="form-label fw-bold">Article Summary</label>
                         <input type="text" class="form-control form-control-sm" id="summary" name="summary" 
-                            placeholder="Summary is a preview text that help readers shous your Article/newsletter" 
+                            placeholder="Summary is a preview text that help readers shous your Article" 
                             minlength="30" maxlength="300" value="{{ old('summary') }}" required>
                             <small class="text-muted">Summary should be 30-300 characters</small>
                     </div>

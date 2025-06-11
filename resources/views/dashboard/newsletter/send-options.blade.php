@@ -11,8 +11,8 @@
 @section('content')
 <div class="container-fluid px-4">
     <x-dashboard-header 
-        title="Send Newsletter" 
-        description="Choose who to send your newsletter to"
+        title="Newsletter Options" 
+        description="Choose what to do with your newsletter"
         :btn="[$btn]"
         class="mb-4">
     </x-dashboard-header>
@@ -28,7 +28,7 @@
     @endif
 
     <div class="row">
-        <!-- Newsletter Preview - Made Bigger -->
+        <!-- Newsletter Preview -->
         <div class="col-lg-8 col-md-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -109,17 +109,49 @@
             </div>
         </div>
 
-        <!-- Send Options - Made Smaller -->
+        <!-- Options Panel -->
         <div class="col-lg-4 col-md-5">
             <form action="{{ route('newsletter.send.confirm', $newsletter->id) }}" method="POST">
                 @csrf
                 <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Send Options</h5>
+                        <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Newsletter Options</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Recipient Selection -->
+                        <!-- Action Type Selection -->
                         <div class="mb-4">
+                            <label class="form-label fw-bold">What would you like to do?</label>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="action_type" id="action-send" 
+                                    value="send" {{ old('action_type', 'send') == 'send' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="action-send">
+                                    <strong><i class="fas fa-paper-plane me-2 text-primary"></i>Send Newsletter</strong><br>
+                                    <small class="text-muted">Send immediately to recipients</small>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="action_type" id="action-schedule" 
+                                    value="schedule" {{ old('action_type') == 'schedule' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="action-schedule">
+                                    <strong><i class="fas fa-clock me-2 text-warning"></i>Schedule Newsletter</strong><br>
+                                    <small class="text-muted">Schedule for later delivery</small>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="action_type" id="action-draft" 
+                                    value="draft" {{ old('action_type') == 'draft' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="action-draft">
+                                    <strong><i class="fas fa-save me-2 text-secondary"></i>Save as Draft</strong><br>
+                                    <small class="text-muted">Save without sending</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Recipient Selection (Hidden for draft) -->
+                        <div class="mb-4" id="recipient-selection">
                             <label class="form-label fw-bold">Who should receive this newsletter?</label>
                             
                             <div class="form-check mb-3">
@@ -193,48 +225,26 @@
                             <small class="text-muted">You can select specific followers to send this newsletter to.</small>
                         </div>
 
-                        <!-- Send Time Options -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">When to send?</label>
-                            
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="radio" name="send_time" id="send-immediate" 
-                                    value="immediate" {{ old('send_time', 'immediate') == 'immediate' ? 'checked' : '' }}>
-                                <label class="form-check-label" for="send-immediate">
-                                    <strong>Send Immediately</strong><br>
-                                    <small class="text-muted">Send right now</small>
-                                </label>
-                            </div>
-                            
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="radio" name="send_time" id="send-scheduled-option" 
-                                    value="scheduled" {{ old('send_time') == 'scheduled' ? 'checked' : '' }}>
-                                <label class="form-check-label" for="send-scheduled-option">
-                                    <strong>Schedule for Later</strong><br>
-                                    <small class="text-muted">Choose a specific date and time</small>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Schedule Date Time -->
+                        <!-- Schedule Date Time (Hidden by default) -->
                         <div class="mb-4" id="schedule-datetime-section" style="display: none;">
                             <label for="scheduled_at_confirm" class="form-label fw-bold">Schedule Date & Time</label>
                             <input type="datetime-local" class="form-control" id="scheduled_at_confirm" name="scheduled_at" 
-                                value="{{ old('scheduled_at') }}" min="{{ now()->format('Y-m-d\TH:i') }}">
-                            <small class="text-muted">Select when you want to send this newsletter</small>
+                                value="{{ old('scheduled_at') }}" min="{{ now()->addMinutes(5)->format('Y-m-d\TH:i') }}">
+                            <small class="text-muted">Select when you want to send this newsletter (minimum 5 minutes from now)</small>
                         </div>
 
-                        <!-- Confirmation -->
-                        <div class="alert alert-info">
+                        <!-- Confirmation Alert -->
+                        <div class="alert alert-info" id="confirmation-alert">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Ready to send?</strong><br>
-                            Please review your selections above before proceeding.
+                            <strong>Ready to proceed?</strong><br>
+                            <span id="confirmation-text">Please review your selections above before proceeding.</span>
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-subscribe" id="send-confirm-btn">
-                                <i class="fas fa-paper-plane me-2"></i><span id="send-btn-text">Send Newsletter</span>
+                            <button type="submit" class="btn btn-subscribe" id="action-btn">
+                                <i class="fas fa-paper-plane me-2" id="action-icon"></i>
+                                <span id="action-btn-text">Send Newsletter</span>
                             </button>
                             <a href="{{ route('dashboard.newsletter') }}" class="btn secondary-btn">
                                 <i class="fas fa-times me-2"></i>Cancel
@@ -320,34 +330,74 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const sendImmediate = document.getElementById('send-immediate');
-        const sendScheduled = document.getElementById('send-scheduled-option');
+        // Action type elements
+        const actionSend = document.getElementById('action-send');
+        const actionSchedule = document.getElementById('action-schedule');
+        const actionDraft = document.getElementById('action-draft');
+        
+        // Section elements
+        const recipientSelection = document.getElementById('recipient-selection');
         const scheduleDatetimeSection = document.getElementById('schedule-datetime-section');
-        const sendBtnText = document.getElementById('send-btn-text');
+        const followerSelection = document.getElementById('follower-selection');
+        
+        // Button elements
+        const actionBtn = document.getElementById('action-btn');
+        const actionIcon = document.getElementById('action-icon');
+        const actionBtnText = document.getElementById('action-btn-text');
+        const confirmationText = document.getElementById('confirmation-text');
         
         // Recipient type elements
         const allFollowersRadio = document.getElementById('all-followers');
         const selectedFollowersRadio = document.getElementById('selected-followers');
         const testSendRadio = document.getElementById('test-send');
-        const followerSelection = document.getElementById('follower-selection');
         const selectAllFollowers = document.getElementById('select-all-followers');
         const followerCheckboxes = document.querySelectorAll('.follower-checkbox');
         
-        function toggleScheduleSection() {
-            if (sendScheduled.checked) {
-                scheduleDatetimeSection.style.display = 'block';
-                sendBtnText.textContent = 'Schedule Newsletter';
-            } else {
+        function updateInterface() {
+            if (actionDraft.checked) {
+                // Draft mode
+                recipientSelection.style.display = 'none';
                 scheduleDatetimeSection.style.display = 'none';
-                sendBtnText.textContent = 'Send Newsletter';
-            }
-        }
-        
-        function toggleFollowerSelection() {
-            if (selectedFollowersRadio.checked) {
-                followerSelection.style.display = 'block';
-            } else {
                 followerSelection.style.display = 'none';
+                
+                actionIcon.className = 'fas fa-save me-2';
+                actionBtnText.textContent = 'Save as Draft';
+                actionBtn.className = 'btn secondary-btn';
+                confirmationText.textContent = 'This will save your newsletter as a draft without sending it.';
+                
+            } else if (actionSchedule.checked) {
+                // Schedule mode
+                recipientSelection.style.display = 'block';
+                scheduleDatetimeSection.style.display = 'block';
+                
+                actionIcon.className = 'fas fa-clock me-2';
+                actionBtnText.textContent = 'Schedule Newsletter';
+                actionBtn.className = 'btn btn-warning';
+                confirmationText.textContent = 'This will schedule your newsletter for the selected date and time.';
+                
+                // Check follower selection
+                if (selectedFollowersRadio.checked) {
+                    followerSelection.style.display = 'block';
+                } else {
+                    followerSelection.style.display = 'none';
+                }
+                
+            } else {
+                // Send mode
+                recipientSelection.style.display = 'block';
+                scheduleDatetimeSection.style.display = 'none';
+                
+                actionIcon.className = 'fas fa-paper-plane me-2';
+                actionBtnText.textContent = 'Send Newsletter';
+                actionBtn.className = 'btn btn-subscribe';
+                confirmationText.textContent = 'This will send your newsletter immediately to the selected recipients.';
+                
+                // Check follower selection
+                if (selectedFollowersRadio.checked) {
+                    followerSelection.style.display = 'block';
+                } else {
+                    followerSelection.style.display = 'none';
+                }
             }
         }
         
@@ -375,11 +425,12 @@
         }
         
         // Event listeners
-        sendImmediate.addEventListener('change', toggleScheduleSection);
-        sendScheduled.addEventListener('change', toggleScheduleSection);
-        allFollowersRadio.addEventListener('change', toggleFollowerSelection);
-        selectedFollowersRadio.addEventListener('change', toggleFollowerSelection);
-        testSendRadio.addEventListener('change', toggleFollowerSelection);
+        actionSend.addEventListener('change', updateInterface);
+        actionSchedule.addEventListener('change', updateInterface);
+        actionDraft.addEventListener('change', updateInterface);
+        allFollowersRadio.addEventListener('change', updateInterface);
+        selectedFollowersRadio.addEventListener('change', updateInterface);
+        testSendRadio.addEventListener('change', updateInterface);
         selectAllFollowers.addEventListener('change', toggleSelectAll);
         
         followerCheckboxes.forEach(checkbox => {
@@ -387,9 +438,20 @@
         });
         
         // Initialize on page load
-        toggleScheduleSection();
-        toggleFollowerSelection();
+        updateInterface();
         updateSelectAll();
+        
+        // Set minimum datetime to 5 minutes from now
+        const scheduledAtInput = document.getElementById('scheduled_at_confirm');
+        function updateMinDatetime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 5);
+            const minDatetime = now.toISOString().slice(0, 16);
+            scheduledAtInput.min = minDatetime;
+        }
+        
+        updateMinDatetime();
+        setInterval(updateMinDatetime, 60000); // Update every minute
     });
 </script>
 @endpush

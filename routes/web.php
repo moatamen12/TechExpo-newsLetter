@@ -293,6 +293,3 @@ Route::get('/test-mailable', function(){
         return 'Error: ' . $e->getMessage();
     }
 });
-
-
-
