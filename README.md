@@ -394,9 +394,3 @@ For questions, issues, or suggestions:
 - [MySQL Documentation](https://dev.mysql.com/doc/)
 - [Bootstrap Documentation](https://getbootstrap.com/docs/)
 - [TinyMCE Documentation](https://www.tiny.cloud/docs/)
-
----
-
-<div align="center">
-  Made with ❤️ for the tech community
-</div>
